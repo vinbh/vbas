@@ -3,8 +3,11 @@
 // The dropdown opens /dev/tty for raw input and ANSI rendering so the
 // caller's stdin/stdout/stderr stay clean. The terminal cursor is saved
 // on entry (CSI s) and restored on exit (CSI u, then CSI J to clear
-// the dropdown rows). All other keys are ignored — only Up/Down navigate,
-// Tab/Enter select, Esc/Ctrl-C cancel.
+// the dropdown rows).
+//
+// Keys: Up/Down navigate · Tab/Enter accept · Esc/Ctrl-C cancel ·
+// printable ASCII filters the list · Backspace removes the last
+// filter character.
 package ui
 
 import (
@@ -29,7 +32,8 @@ type Item struct {
 const MaxRows = 10
 
 // Run displays the dropdown for items and returns the selected
-// item's Value, or "" if the user cancels (Esc / Ctrl-C / EOF).
+// item's Value, or "" if the user cancels (Esc / Ctrl-C / accepts
+// while filtered list is empty).
 //
 // It opens /dev/tty itself; never write to os.Stdout from inside Run.
 func Run(items []Item) (string, error) {
@@ -48,18 +52,15 @@ func Run(items []Item) (string, error) {
 	}
 	defer term.Restore(int(tty.Fd()), old)
 
-	d := &dropdown{
-		items: items,
-		tty:   tty,
-		rows:  min(len(items), MaxRows),
-	}
+	d := &dropdown{items: items, tty: tty}
+	d.refilter()
 
 	d.init()
 	defer d.cleanup()
 
 	d.draw()
 	for {
-		k, err := d.readKey()
+		k, ch, err := d.readKey()
 		if err != nil {
 			return "", nil
 		}
@@ -67,29 +68,62 @@ func Run(items []Item) (string, error) {
 		case keyUp:
 			if d.selected > 0 {
 				d.selected--
-				d.viewStart = adjustViewport(d.selected, d.viewStart, d.rows)
+				d.viewStart = adjustViewport(d.selected, d.viewStart, MaxRows)
 				d.draw()
 			}
 		case keyDown:
-			if d.selected < len(d.items)-1 {
+			if d.selected < len(d.filtered)-1 {
 				d.selected++
-				d.viewStart = adjustViewport(d.selected, d.viewStart, d.rows)
+				d.viewStart = adjustViewport(d.selected, d.viewStart, MaxRows)
 				d.draw()
 			}
 		case keyEnter, keyTab:
-			return d.items[d.selected].Value, nil
+			if len(d.filtered) == 0 {
+				return "", nil
+			}
+			return d.items[d.filtered[d.selected]].Value, nil
 		case keyEsc, keyCtrlC:
 			return "", nil
+		case keyChar:
+			d.query += string(ch)
+			d.refilter()
+			d.draw()
+		case keyBackspace:
+			if d.query != "" {
+				d.query = d.query[:len(d.query)-1]
+				d.refilter()
+				d.draw()
+			}
 		}
 	}
 }
 
 type dropdown struct {
 	items     []Item
-	selected  int
+	filtered  []int  // indices into items matching the current query
+	query     string
+	selected  int    // index into filtered
 	viewStart int
-	rows      int
 	tty       *os.File
+}
+
+// refilter rebuilds d.filtered from d.items and d.query (case-insensitive
+// substring match against Value or Description). Resets selected/viewStart
+// to the top of the new filtered list — when the user narrows or widens
+// the query, starting at the top is more useful than carrying the old
+// position over.
+func (d *dropdown) refilter() {
+	d.filtered = d.filtered[:0]
+	q := strings.ToLower(d.query)
+	for i, it := range d.items {
+		if q == "" ||
+			strings.Contains(strings.ToLower(it.Value), q) ||
+			strings.Contains(strings.ToLower(it.Description), q) {
+			d.filtered = append(d.filtered, i)
+		}
+	}
+	d.selected = 0
+	d.viewStart = 0
 }
 
 const (
@@ -129,25 +163,37 @@ func (d *dropdown) draw() {
 	b.WriteString(csiRestoreCursor)
 	b.WriteString(csiClearBelow)
 
-	for i := 0; i < d.rows; i++ {
+	rows := len(d.filtered)
+	if rows > MaxRows {
+		rows = MaxRows
+	}
+	for i := 0; i < rows; i++ {
 		idx := d.viewStart + i
-		if idx >= len(d.items) {
+		if idx >= len(d.filtered) {
 			break
 		}
+		item := d.items[d.filtered[idx]]
 		b.WriteString("\r\n")
-		// Left-edge bar is drawn outside the reverse-video region so it
-		// stays the same color whether the row is selected or not.
+		// Bar drawn outside the reverse-video region so its color is
+		// stable regardless of selection.
 		b.WriteString(csiCyan)
 		b.WriteString(barChar)
 		b.WriteString(csiReset)
 		if idx == d.selected {
 			b.WriteString(csiReverse)
 		}
-		b.WriteString(formatRow(d.items[idx], idx == d.selected))
+		b.WriteString(formatRow(item, idx == d.selected))
 		b.WriteString(csiReset)
 	}
 
-	// Footer with vbas tag, key hints, and position counter.
+	if len(d.filtered) == 0 {
+		b.WriteString("\r\n")
+		b.WriteString(csiFaint)
+		b.WriteString("  (no matches)")
+		b.WriteString(csiReset)
+	}
+
+	// Footer: ─── vbas [· "query"] ─── hints · X/N
 	b.WriteString("\r\n")
 	b.WriteString(csiFaint)
 	b.WriteString("─── ")
@@ -155,9 +201,23 @@ func (d *dropdown) draw() {
 	b.WriteString(csiBoldCyan)
 	b.WriteString("vbas")
 	b.WriteString(csiReset)
+
+	if d.query != "" {
+		b.WriteString(csiFaint)
+		b.WriteString(" · ")
+		b.WriteString(csiReset)
+		b.WriteString(csiCyan)
+		b.WriteString(fmt.Sprintf("%q", d.query))
+		b.WriteString(csiReset)
+	}
+
 	b.WriteString(csiFaint)
-	fmt.Fprintf(&b, " ─── ↑↓ select · ⏎ accept · esc cancel · %d/%d",
-		d.selected+1, len(d.items))
+	if len(d.filtered) > 0 {
+		fmt.Fprintf(&b, " ─── ↑↓ select · ⏎ accept · esc cancel · %d/%d",
+			d.selected+1, len(d.filtered))
+	} else {
+		b.WriteString(" ─── type to filter · ⌫ backspace · esc cancel")
+	}
 	b.WriteString(csiReset)
 
 	io.WriteString(d.tty, b.String())
@@ -220,28 +280,40 @@ const (
 	keyTab
 	keyEsc
 	keyCtrlC
+	keyChar
+	keyBackspace
 )
 
-// readKey reads one keystroke from the tty. Escape sequences for arrow
-// keys are decoded; bare Esc is disambiguated from CSI prefixes by a
-// short read deadline.
-func (d *dropdown) readKey() (key, error) {
+// readKey reads one keystroke from the tty and returns (key, char, err).
+// char is non-zero only when key == keyChar (a printable ASCII byte).
+// Multi-byte UTF-8 input is currently treated as keyUnknown — fine for
+// command-name filtering since CLI names are ASCII.
+func (d *dropdown) readKey() (key, byte, error) {
 	buf := make([]byte, 1)
 	n, err := d.tty.Read(buf)
 	if err != nil || n == 0 {
-		return keyUnknown, err
+		return keyUnknown, 0, err
 	}
-	switch buf[0] {
+	b := buf[0]
+	switch b {
 	case '\r', '\n':
-		return keyEnter, nil
+		return keyEnter, 0, nil
 	case '\t':
-		return keyTab, nil
+		return keyTab, 0, nil
 	case 0x03:
-		return keyCtrlC, nil
+		return keyCtrlC, 0, nil
+	case 0x08, 0x7F:
+		// 0x08 = Ctrl-H / classic BS; 0x7F = DEL, sent by most modern
+		// terminals when Backspace is pressed.
+		return keyBackspace, 0, nil
 	case 0x1b:
-		return d.readEscapeSeq()
+		k, err := d.readEscapeSeq()
+		return k, 0, err
 	}
-	return keyUnknown, nil
+	if b >= 0x20 && b <= 0x7E {
+		return keyChar, b, nil
+	}
+	return keyUnknown, 0, nil
 }
 
 func (d *dropdown) readEscapeSeq() (key, error) {

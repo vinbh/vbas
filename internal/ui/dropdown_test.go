@@ -103,6 +103,65 @@ func TestParseEscape(t *testing.T) {
 	}
 }
 
+func TestRefilter(t *testing.T) {
+	items := []Item{
+		{Value: "checkout", Description: "Switch branches"},
+		{Value: "commit", Description: "Record changes"},
+		{Value: "clone", Description: "Clone a repository"},
+		{Value: "stash", Description: "Stash changes"},
+		{Value: "diff", Description: "Show changes"},
+	}
+	cases := []struct {
+		name  string
+		query string
+		want  []string
+	}{
+		{"empty query matches all", "", []string{"checkout", "commit", "clone", "stash", "diff"}},
+		{"value substring", "co", []string{"commit"}},
+		{"value prefix", "clo", []string{"clone"}},
+		{"description substring", "changes", []string{"commit", "stash", "diff"}},
+		{"case insensitive", "CHECKOUT", []string{"checkout"}},
+		{"no match", "xyz", nil},
+	}
+	for _, c := range cases {
+		d := &dropdown{items: items, query: c.query}
+		d.refilter()
+		got := make([]string, 0, len(d.filtered))
+		for _, idx := range d.filtered {
+			got = append(got, d.items[idx].Value)
+		}
+		if !sliceEqual(got, c.want) {
+			t.Errorf("%s (query=%q): got %v, want %v", c.name, c.query, got, c.want)
+		}
+	}
+}
+
+func TestRefilterResetsSelection(t *testing.T) {
+	d := &dropdown{
+		items:     []Item{{Value: "a"}, {Value: "b"}, {Value: "c"}},
+		selected:  2,
+		viewStart: 1,
+	}
+	d.query = "b"
+	d.refilter()
+	if d.selected != 0 || d.viewStart != 0 {
+		t.Errorf("refilter should reset selected/viewStart to 0; got selected=%d viewStart=%d",
+			d.selected, d.viewStart)
+	}
+}
+
+func sliceEqual(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
+}
+
 func contains(haystack, needle string) bool {
 	if needle == "" {
 		return true
