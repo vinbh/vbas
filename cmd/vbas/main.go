@@ -2,10 +2,15 @@
 //
 // Usage:
 //
-//	vbas complete --buffer "<line>" [--cursor N] [--specs DIR] [--json]
+//	vbas complete --buffer "<line>" [--cursor N] [--specs DIR] [--json] [--interactive]
 //	vbas version
 //
-// The shell hook in shell/zsh/vbas.zsh invokes `vbas complete` on Tab.
+// In --interactive mode the dropdown UI is drawn on /dev/tty and the
+// chosen value is written to stdout. Exit codes:
+//
+//	0  — picked a value (stdout has it) or user cancelled (stdout empty)
+//	1  — internal error
+//	2  — nothing to suggest (no spec, no matches); shell should fall through
 package main
 
 import (
@@ -17,9 +22,10 @@ import (
 	"strings"
 
 	"github.com/vinbh/vbas/internal/spec"
+	"github.com/vinbh/vbas/internal/ui"
 )
 
-const version = "0.0.1"
+const version = "0.0.2"
 
 func main() {
 	if len(os.Args) < 2 {
@@ -42,7 +48,7 @@ func main() {
 
 func usage(w *os.File) {
 	fmt.Fprintln(w, `usage:
-  vbas complete --buffer <line> [--cursor N] [--specs DIR] [--json]
+  vbas complete --buffer <line> [--cursor N] [--specs DIR] [--json] [--interactive]
   vbas version`)
 }
 
@@ -52,33 +58,72 @@ func runComplete(args []string) {
 	_ = fs.Int("cursor", -1, "cursor position (reserved; not yet used)")
 	specsDir := fs.String("specs", defaultSpecsDir(), "directory containing JSON specs")
 	asJSON := fs.Bool("json", false, "emit one JSON object per line instead of plain values")
+	interactive := fs.Bool("interactive", false, "show dropdown UI; exit 2 when no spec/no matches")
 	if err := fs.Parse(args); err != nil {
 		os.Exit(2)
 	}
-	if *buffer == "" {
-		return
-	}
 
-	tokens := strings.Fields(*buffer)
-	if len(tokens) == 0 {
-		return
-	}
-	cmd := tokens[0]
-
-	loader := spec.NewLoader(*specsDir)
-	s, err := loader.Load(cmd)
+	suggestions, err := getSuggestions(*buffer, *specsDir)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "vbas: %v\n", err)
 		os.Exit(1)
 	}
-	if s == nil {
+
+	if *interactive {
+		outputInteractive(suggestions)
 		return
 	}
+	outputPlain(suggestions, *asJSON)
+}
 
-	suggestions := spec.Match(s, *buffer)
+func getSuggestions(buffer, specsDir string) ([]spec.Suggestion, error) {
+	if buffer == "" {
+		return nil, nil
+	}
+	tokens := strings.Fields(buffer)
+	if len(tokens) == 0 {
+		return nil, nil
+	}
+	loader := spec.NewLoader(specsDir)
+	s, err := loader.Load(tokens[0])
+	if err != nil {
+		return nil, err
+	}
+	if s == nil {
+		return nil, nil
+	}
+	return spec.Match(s, buffer), nil
+}
+
+// outputInteractive handles the --interactive case. Exits 2 with empty
+// stdout when there's nothing to offer (so the shell falls through);
+// exits 0 with the picked value (or empty if cancelled) otherwise.
+func outputInteractive(suggestions []spec.Suggestion) {
+	if len(suggestions) == 0 {
+		os.Exit(2)
+	}
+	if len(suggestions) == 1 {
+		fmt.Println(suggestions[0].Value)
+		return
+	}
+	items := make([]ui.Item, len(suggestions))
+	for i, s := range suggestions {
+		items[i] = ui.Item{Value: s.Value, Description: s.Description}
+	}
+	pick, err := ui.Run(items)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "vbas: %v\n", err)
+		os.Exit(1)
+	}
+	if pick != "" {
+		fmt.Println(pick)
+	}
+}
+
+func outputPlain(suggestions []spec.Suggestion, asJSON bool) {
 	enc := json.NewEncoder(os.Stdout)
 	for _, sug := range suggestions {
-		if *asJSON {
+		if asJSON {
 			_ = enc.Encode(sug)
 		} else {
 			fmt.Println(sug.Value)
