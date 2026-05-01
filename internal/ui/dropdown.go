@@ -102,7 +102,14 @@ const (
 	csiDim           = "\033[2m"
 	csiReset         = "\033[0m"
 	csiFaint         = "\033[90m"
+	csiCyan          = "\033[36m"
+	csiBoldCyan      = "\033[1;36m"
 )
+
+// barChar is the left-edge gutter rendered cyan on every row — a visual
+// marker so the dropdown is unmistakably vbas, not zsh's default
+// menuselect or some other completion plugin.
+const barChar = "▍"
 
 func (d *dropdown) init() {
 	io.WriteString(d.tty, csiSaveCursor+csiHideCursor)
@@ -121,18 +128,38 @@ func (d *dropdown) draw() {
 	var b strings.Builder
 	b.WriteString(csiRestoreCursor)
 	b.WriteString(csiClearBelow)
+
 	for i := 0; i < d.rows; i++ {
 		idx := d.viewStart + i
 		if idx >= len(d.items) {
 			break
 		}
 		b.WriteString("\r\n")
+		// Left-edge bar is drawn outside the reverse-video region so it
+		// stays the same color whether the row is selected or not.
+		b.WriteString(csiCyan)
+		b.WriteString(barChar)
+		b.WriteString(csiReset)
 		if idx == d.selected {
 			b.WriteString(csiReverse)
 		}
 		b.WriteString(formatRow(d.items[idx], idx == d.selected))
 		b.WriteString(csiReset)
 	}
+
+	// Footer with vbas tag, key hints, and position counter.
+	b.WriteString("\r\n")
+	b.WriteString(csiFaint)
+	b.WriteString("─── ")
+	b.WriteString(csiReset)
+	b.WriteString(csiBoldCyan)
+	b.WriteString("vbas")
+	b.WriteString(csiReset)
+	b.WriteString(csiFaint)
+	fmt.Fprintf(&b, " ─── ↑↓ select · ⏎ accept · esc cancel · %d/%d",
+		d.selected+1, len(d.items))
+	b.WriteString(csiReset)
+
 	io.WriteString(d.tty, b.String())
 }
 
