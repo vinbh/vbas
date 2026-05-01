@@ -222,24 +222,34 @@ func (d *dropdown) readEscapeSeq() (key, error) {
 	_ = d.tty.SetReadDeadline(time.Now().Add(50 * time.Millisecond))
 	defer d.tty.SetReadDeadline(time.Time{})
 
-	buf := make([]byte, 1)
-	n, err := d.tty.Read(buf)
-	if err != nil || n == 0 || buf[0] != '[' {
+	var buf [2]byte
+	if _, err := d.tty.Read(buf[:1]); err != nil {
 		return keyEsc, nil
 	}
-	n, err = d.tty.Read(buf)
-	if err != nil || n == 0 {
+	if _, err := d.tty.Read(buf[1:2]); err != nil {
 		return keyEsc, nil
 	}
-	switch buf[0] {
+	return parseEscape(buf[0], buf[1]), nil
+}
+
+// parseEscape decodes the two bytes following Esc into a key. Both CSI
+// ('[') and SS3 ('O') prefixes precede arrow keys; SS3 is sent when the
+// terminal is in application cursor-key mode (DECCKM), which zsh's ZLE
+// enables by default — that's why the M2-as-shipped version ignored
+// arrow keys inside zsh.
+func parseEscape(prefix, code byte) key {
+	if prefix != '[' && prefix != 'O' {
+		return keyEsc
+	}
+	switch code {
 	case 'A':
-		return keyUp, nil
+		return keyUp
 	case 'B':
-		return keyDown, nil
+		return keyDown
 	case 'C':
-		return keyRight, nil
+		return keyRight
 	case 'D':
-		return keyLeft, nil
+		return keyLeft
 	}
-	return keyUnknown, nil
+	return keyUnknown
 }

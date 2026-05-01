@@ -77,6 +77,32 @@ func TestFormatRowSelectedSkipsFaint(t *testing.T) {
 	}
 }
 
+func TestParseEscape(t *testing.T) {
+	cases := []struct {
+		name         string
+		prefix, code byte
+		want         key
+	}{
+		{"CSI Up", '[', 'A', keyUp},
+		{"CSI Down", '[', 'B', keyDown},
+		{"CSI Right", '[', 'C', keyRight},
+		{"CSI Left", '[', 'D', keyLeft},
+		{"SS3 Up (zsh ZLE app cursor mode)", 'O', 'A', keyUp},
+		{"SS3 Down", 'O', 'B', keyDown},
+		{"SS3 Right", 'O', 'C', keyRight},
+		{"SS3 Left", 'O', 'D', keyLeft},
+		{"unknown prefix → bare Esc", 'X', 'A', keyEsc},
+		{"unknown CSI code", '[', 'Z', keyUnknown},
+	}
+	for _, c := range cases {
+		got := parseEscape(c.prefix, c.code)
+		if got != c.want {
+			t.Errorf("%s: parseEscape(%q, %q) = %v, want %v",
+				c.name, c.prefix, c.code, got, c.want)
+		}
+	}
+}
+
 func contains(haystack, needle string) bool {
 	if needle == "" {
 		return true
