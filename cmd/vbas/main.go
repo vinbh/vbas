@@ -1,4 +1,4 @@
-// vbas is the vb-autosuggest CLI (https://github.com/vb666/vbas).
+// vbas is the vb-autosuggest CLI (https://github.com/vinbh/vbas).
 //
 // Usage:
 //
@@ -16,7 +16,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/vb666/vbas/internal/spec"
+	"github.com/vinbh/vbas/internal/spec"
 )
 
 const version = "0.0.1"

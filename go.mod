@@ -1,3 +1,3 @@
-module github.com/vb666/vbas
+module github.com/vinbh/vbas
 
 go 1.21
