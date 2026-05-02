@@ -14,7 +14,7 @@ $ git c
 
 Type a known command and a space — the dropdown opens automatically. Type letters to filter, arrows to navigate, Tab/Enter to accept, Esc to cancel. Tab on its own works too.
 
-> ⚠️ **Pre-MVP.** Currently ships with a hand-rolled `git` spec only. The catalog grows in M5 (Fig spec import). Usable, fun, not yet a daily driver.
+> ⚠️ **Pre-MVP.** Ships with **29 imported specs** (git, docker, kubectl, helm, terraform, npm, cargo, ssh, curl, ...) — see [`specs/fig/`](./specs/fig). Dynamic completions like live `git branch` names land in M6.
 
 ## Why?
 
@@ -31,15 +31,14 @@ Type a known command and a space — the dropdown opens automatically. Type lett
 - **Long-running daemon** for sub-ms steady-state latency (auto-spawned, in-process fallback if it can't bind).
 - **Distinctive UI** — cyan left-edge bar, position counter, key hints in the footer.
 - **Single static Go binary** — no Node, no runtime deps.
-- **Built-in spec for `git`** (~22 subcommands and common flags).
+- **Built-in specs for 29 commands** — `git`, `docker`, `kubectl`, `helm`, `terraform`, `make`, `go`, `cargo`, `rustc`, `python`/`python3`, `pip`, `node`, `npm`, `yarn`, `pnpm`, `ls`, `find`, `grep`, `sed`, `xargs`, `tar`, `curl`, `wget`, `ssh`, `scp`, `systemctl`, `apt`, `brew`. Imported from [Fig autocomplete](https://github.com/withfig/autocomplete) (MIT). Add more by editing [`tools/import-fig/commands.txt`](./tools/import-fig/commands.txt) and re-running the importer.
 
 ## What it can't do yet
 
 | Capability | Lands in |
 |---|---|
-| Auto-open while typing the *command name itself* (not just after space) | M4.1 polish |
-| Spec coverage for thousands of CLIs | M5 (import from Fig autocomplete) |
-| Dynamic generators (`git branch` autocompletes live branch names) | M6 (goja JS runtime) |
+| Spec coverage for the rest of Fig's ~3000-CLI catalog | M5 polish (expand `commands.txt`) |
+| Dynamic generators (`git checkout <Tab>` autocompletes live branch names) | M6 (goja JS runtime) |
 | bash and fish shells | M7 |
 | LLM fallback for unknown commands | post-M7 |
 | Packaging (deb/rpm/AUR/Homebrew) | M7+ |
@@ -100,8 +99,8 @@ The daemon auto-spawns on first use (fork + Setsid, no systemd plumbing). If it 
 - [x] **M1** — zsh Tab completion via static JSON specs
 - [x] **M2** — in-terminal ANSI dropdown UI + type-to-filter
 - [x] **M3** — long-running daemon over Unix socket (lazy auto-spawn, in-process fallback)
-- [x] **M4** — auto-open dropdown after space-after-known-command, with cascading levels ← *you are here*
-- [ ] **M5** — broader spec coverage (transpile from [Fig autocomplete](https://github.com/withfig/autocomplete))
+- [x] **M4** — auto-open dropdown after space-after-known-command, with cascading levels
+- [x] **M5** — broader spec coverage via [Fig autocomplete](https://github.com/withfig/autocomplete) import (29 commands today; expand by editing `tools/import-fig/commands.txt`) ← *you are here*
 - [ ] **M6** — embedded `goja` JS engine for full Fig spec compatibility (live branch completion etc.)
 - [ ] **M7+** — bash/fish adapters · history-based ranking · LLM fallback · packaging (deb/rpm/AUR/brew)
 

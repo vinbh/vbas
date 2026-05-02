@@ -17,7 +17,7 @@ type Spec struct {
 	Description string       `json:"description,omitempty"`
 	Subcommands []Subcommand `json:"subcommands,omitempty"`
 	Options     []Option     `json:"options,omitempty"`
-	Args        []Arg        `json:"args,omitempty"`
+	Args        Args         `json:"args,omitempty"`
 }
 
 // Subcommand is a nested command under a parent (e.g., "checkout" under "git").
@@ -26,14 +26,14 @@ type Subcommand struct {
 	Description string       `json:"description,omitempty"`
 	Subcommands []Subcommand `json:"subcommands,omitempty"`
 	Options     []Option     `json:"options,omitempty"`
-	Args        []Arg        `json:"args,omitempty"`
+	Args        Args         `json:"args,omitempty"`
 }
 
 // Option is a flag like "-m" or "--message".
 type Option struct {
 	Name        Names  `json:"name"`
 	Description string `json:"description,omitempty"`
-	Args        []Arg  `json:"args,omitempty"`
+	Args        Args   `json:"args,omitempty"`
 }
 
 // Arg describes a positional argument.
@@ -62,5 +62,28 @@ func (n *Names) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	*n = list
+	return nil
+}
+
+// Args is a list of positional argument descriptors. Fig allows the `args`
+// field to be either a single Arg object or an array of them (single-arg
+// is the common case for options with one argument); this type accepts both.
+type Args []Arg
+
+func (a *Args) UnmarshalJSON(data []byte) error {
+	data = bytes.TrimSpace(data)
+	if len(data) > 0 && data[0] == '{' {
+		var single Arg
+		if err := json.Unmarshal(data, &single); err != nil {
+			return err
+		}
+		*a = Args{single}
+		return nil
+	}
+	var list []Arg
+	if err := json.Unmarshal(data, &list); err != nil {
+		return err
+	}
+	*a = list
 	return nil
 }
