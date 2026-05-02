@@ -93,6 +93,14 @@ _vbas_cascade() {
     local last="${trimmed##* }"
     [[ "$last" != -* ]] || break
 
+    # Flush LBUFFER to the terminal BEFORE spawning the dropdown.
+    # ZLE normally only redraws after a widget returns; if we skip this,
+    # the dropdown subprocess would save its anchor cursor at the screen
+    # state from the last keystroke (one char short of LBUFFER) and the
+    # last typed char would appear missing until after the dropdown
+    # closes and the widget returns.
+    zle -R
+
     _vbas_dropdown_core
     case $? in
       0) ;;       # picked something; check if next level cascades
