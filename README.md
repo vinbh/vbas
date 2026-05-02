@@ -12,7 +12,7 @@ $ git c
 ─── vbas ─── ↑↓ select · ⏎ accept · esc cancel · 1/5
 ```
 
-Tab opens a dropdown · type to filter · arrows navigate · Tab/Enter accept · Esc cancel.
+Type a known command and a space — the dropdown opens automatically. Type letters to filter, arrows to navigate, Tab/Enter to accept, Esc to cancel. Tab on its own works too.
 
 > ⚠️ **Pre-MVP.** Currently ships with a hand-rolled `git` spec only. The catalog grows in M5 (Fig spec import). Usable, fun, not yet a daily driver.
 
@@ -24,22 +24,25 @@ Tab opens a dropdown · type to filter · arrows navigate · Tab/Enter accept ·
 
 ## What works today
 
-- **Tab opens an inline dropdown** of subcommands and flags, sourced from a JSON spec
-- **Type to filter** — case-insensitive substring match on name or description
-- **Arrow keys navigate**, Tab/Enter accept, Esc cancel
-- **Distinctive UI** — cyan left-edge bar, position counter, key hints in the footer (so you can tell vbas apart from zsh's default menuselect at a glance)
-- **Built-in spec for `git`** (~22 subcommands and common flags)
-- **Single static Go binary** — no Node, no runtime deps
+- **Auto-open dropdown** on space-after-known-command — no Tab required. The dropdown shows all subcommands or flags valid at the current position, with descriptions inline.
+- **Cascading levels** — pick a subcommand and the next dropdown (its flags) opens automatically. Stops cleanly when you reach an option flag.
+- **Tab also works** as an explicit trigger and falls back to default zsh completion when there's no spec.
+- **Type to filter** — case-insensitive substring match on name or description.
+- **Long-running daemon** for sub-ms steady-state latency (auto-spawned, in-process fallback if it can't bind).
+- **Distinctive UI** — cyan left-edge bar, position counter, key hints in the footer.
+- **Single static Go binary** — no Node, no runtime deps.
+- **Built-in spec for `git`** (~22 subcommands and common flags).
 
 ## What it can't do yet
 
 | Capability | Lands in |
 |---|---|
-| As-you-type suggestions (no Tab needed) | M4 |
-| Sub-millisecond steady-state latency | M3 (long-running daemon) |
+| Auto-open while typing the *command name itself* (not just after space) | M4.1 polish |
 | Spec coverage for thousands of CLIs | M5 (import from Fig autocomplete) |
-| bash and fish | M7 |
+| Dynamic generators (`git branch` autocompletes live branch names) | M6 (goja JS runtime) |
+| bash and fish shells | M7 |
 | LLM fallback for unknown commands | post-M7 |
+| Packaging (deb/rpm/AUR/Homebrew) | M7+ |
 
 A few things vbas **won't** do, intentionally:
 
@@ -62,9 +65,9 @@ export VBAS_SPECS_DIR="$PWD/specs"
 source ./shell/zsh/vbas.zsh
 
 # Try it:
-git c<Tab>      # dropdown of 5 subcommands starting with "c"
-git <Tab>       # full list — type letters to filter
-git commit -<Tab>   # flag dropdown
+git <space>           # dropdown auto-opens; type to filter
+git commit            # then <space>; flag dropdown auto-opens
+git ch<Tab>           # explicit Tab still works
 ```
 
 Make it permanent by adding the `export` lines and the `source` line to your `~/.zshrc`.
@@ -72,30 +75,34 @@ Make it permanent by adding the `export` lines and the `source` line to your `~/
 ## How it works
 
 ```
-zsh widget on Tab ──exec──▶ vbas binary
-                                │
-                                ├─▶ load JSON spec for the first token (e.g. "git")
-                                ├─▶ match remaining input against spec
-                                └─▶ if 2+ matches: open /dev/tty, raw mode,
-                                     draw ANSI dropdown, run key loop,
-                                     return picked value to stdout
-                                              │
-                  zsh widget reads stdout ◀───┘
-                  zsh widget replaces last token with picked value
+zsh widget (Tab or auto-trigger on space)
+       │
+       ▼
+   vbas client ──unix socket──▶ vbas-daemon
+       │                              │
+       │                              ├─ load JSON spec for first token
+       │                              ├─ match remaining input against spec
+       ◀──── []Suggestion JSON ───────┘
+       ▼
+   open /dev/tty, raw mode, ANSI dropdown,
+   key loop with type-to-filter,
+   return picked value to stdout
+       │
+       ▼
+   zsh widget replaces last token, may cascade to next level
 ```
 
-Today: a fresh process per Tab keypress (~10ms cold start — fine for M2).
-M3 introduces a long-running daemon over a Unix socket — sub-millisecond steady-state, which is what makes M4 (as-you-type) feasible.
+The daemon auto-spawns on first use (fork + Setsid, no systemd plumbing). If it can't start, vbas falls back to in-process matching so the user is never left dead.
 
 ## Roadmap
 
 - [x] **M0** — repo scaffold (license, CLA, layout)
 - [x] **M1** — zsh Tab completion via static JSON specs
-- [x] **M2** — in-terminal ANSI dropdown UI + type-to-filter ← *you are here*
-- [ ] **M3** — long-running daemon over Unix socket
-- [ ] **M4** — as-you-type suggestions on every keystroke
+- [x] **M2** — in-terminal ANSI dropdown UI + type-to-filter
+- [x] **M3** — long-running daemon over Unix socket (lazy auto-spawn, in-process fallback)
+- [x] **M4** — auto-open dropdown after space-after-known-command, with cascading levels ← *you are here*
 - [ ] **M5** — broader spec coverage (transpile from [Fig autocomplete](https://github.com/withfig/autocomplete))
-- [ ] **M6** — embedded `goja` JS engine for full Fig spec compatibility
+- [ ] **M6** — embedded `goja` JS engine for full Fig spec compatibility (live branch completion etc.)
 - [ ] **M7+** — bash/fish adapters · history-based ranking · LLM fallback · packaging (deb/rpm/AUR/brew)
 
 ## How vbas compares
@@ -107,7 +114,7 @@ M3 introduces a long-running daemon over a Unix socket — sub-millisecond stead
 | Type-to-filter inside dropdown | ✅ | n/a | ✅ | ✅ |
 | Source-available | ✅ PolyForm-NC | ✅ MIT | ❌ proprietary | ✅ MIT |
 | Standalone binary | ✅ Go | ✅ pure shell | ❌ | ❌ Node runtime |
-| As-you-type | ❌ (M4) | ✅ | ✅ | ✅ |
+| Auto-suggest while typing | ✅ on `cmd <space>` | ✅ ghost only | ✅ | ✅ |
 
 ## License
 
