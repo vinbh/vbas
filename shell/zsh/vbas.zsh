@@ -30,8 +30,11 @@ fi
 # ----------------------------------------------------------------------------
 
 # Cheap stat per call — fine on every keystroke.
+# Mirrors the Go loader's lookup order: hand-rolled $VBAS_SPECS_DIR/<cmd>.json
+# wins, then fall back to imported $VBAS_SPECS_DIR/fig/<cmd>.json (M5+).
 _vbas_has_spec() {
-  [[ -n "$VBAS_SPECS_DIR" && -f "$VBAS_SPECS_DIR/$1.json" ]]
+  [[ -n "$VBAS_SPECS_DIR" ]] || return 1
+  [[ -f "$VBAS_SPECS_DIR/$1.json" || -f "$VBAS_SPECS_DIR/fig/$1.json" ]]
 }
 
 # After auto-trigger fires once, we suppress further auto-triggers as
