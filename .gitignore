@@ -28,3 +28,6 @@ Thumbs.db
 # Local overrides
 .env
 .env.local
+
+# Local progress / resume notes (not for upstream)
+SESSION_NOTES.md
