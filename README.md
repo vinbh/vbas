@@ -55,21 +55,37 @@ You'll need **Go 1.21+** and **zsh**.
 ```bash
 git clone https://github.com/vinbh/vbas.git
 cd vbas
-go build -o ./bin/vbas ./cmd/vbas
+./install.sh
+```
 
-export PATH="$PWD/bin:$PATH"
-export VBAS_SPECS_DIR="$PWD/specs"
+That builds the binary, copies it to `~/.local/bin/vbas`, and drops the zsh hook + specs into `~/.config/vbas/`. One-time line for your `~/.zshrc`:
 
-# In a zsh session:
-source ./shell/zsh/vbas.zsh
+```bash
+source ~/.config/vbas/vbas.zsh
+```
 
-# Try it:
+Open a new shell. Try it:
+
+```
 git <space>           # dropdown auto-opens; type to filter
 git commit            # then <space>; flag dropdown auto-opens
 git ch<Tab>           # explicit Tab still works
+docker <space>        # 50+ docker subcommands; same flow for kubectl, gh, aws, ...
 ```
 
-Make it permanent by adding the `export` lines and the `source` line to your `~/.zshrc`.
+To uninstall: `./uninstall.sh` (preserves any hand-rolled specs at `~/.config/vbas/specs/<cmd>.json`).
+
+### Hacking on the source
+
+If you're poking at vbas itself, you don't need to install — just point at the working tree:
+
+```bash
+go build -o ./bin/vbas ./cmd/vbas
+export PATH="$PWD/bin:$PATH"
+export VBAS_SPECS_DIR="$PWD/specs"
+source ./shell/zsh/vbas.zsh
+# After any rebuild: pkill -KILL -f 'vbas daemon'  (so the daemon picks up new code)
+```
 
 ## How it works
 
