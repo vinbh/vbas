@@ -1,23 +1,22 @@
-# vbas-autosuggest zsh integration (M2 + M4)
+# vbas-autosuggest zsh integration (M2 + M4 + M4.1 + M4.2)
 #
 # Usage: source this file from your .zshrc:
 #
 #   export VBAS_SPECS_DIR=/path/to/vbas/specs
 #   source /path/to/vbas/shell/zsh/vbas.zsh
 #
-# Two triggers open the same dropdown UI:
+# Three triggers, all opening the same dropdown UI:
 #
-#   * Tab — explicit user trigger. Falls through to default zsh
-#     completion if vbas has no spec for the first token.
+#   * Tab — explicit user trigger (always fires; bypasses suppression).
+#   * Typing a known command name (e.g., `git`) — auto-trigger via the
+#     self-insert override; opens the subcommand dropdown immediately.
+#   * Space after a known command — auto-trigger via the space binding.
 #
-#   * Space — auto-trigger. After typing a space when the buffer
-#     starts with a known command (one with a JSON spec), the
-#     dropdown opens automatically. Repeated picks cascade through
-#     subcommand levels until the user lands on an option (—-flag)
-#     or there are no more matches.
-#
-# vbas's own dropdown (in Go) handles type-to-filter, descriptions,
-# and selection — see internal/ui/dropdown.go.
+# After one auto-trigger has fired on a command line, further typing on
+# the same line does NOT re-open the dropdown (M4.2). This avoids the
+# "I'm typing a positional arg, please stop showing me option flags"
+# problem. Tab still works as an explicit override. State resets when
+# the prompt redraws (zle-line-init).
 
 : ${VBAS_BIN:=vbas}
 
@@ -30,18 +29,23 @@ fi
 # Helpers
 # ----------------------------------------------------------------------------
 
-# _vbas_has_spec — is there a spec file for command name $1?
-# Cheap stat per call; fine on every space keystroke.
+# Cheap stat per call — fine on every keystroke.
 _vbas_has_spec() {
   [[ -n "$VBAS_SPECS_DIR" && -f "$VBAS_SPECS_DIR/$1.json" ]]
 }
 
-# _vbas_dropdown_core — invoke vbas's interactive dropdown.
-#
-# Returns:
-#   0 — the user picked something; LBUFFER updated
+# After auto-trigger fires once, we suppress further auto-triggers as
+# long as the user keeps extending the same line. Tab is unaffected.
+typeset -g _VBAS_CASCADED_PREFIX=""
+
+_vbas_should_suppress() {
+  [[ -n "$_VBAS_CASCADED_PREFIX" && "$LBUFFER" == "$_VBAS_CASCADED_PREFIX"* ]]
+}
+
+# Invoke vbas's interactive dropdown for the current LBUFFER. Returns:
+#   0 — pick applied to LBUFFER
 #   1 — vbas had no matches (caller decides whether to fall through)
-#   2 — user cancelled (Esc/Ctrl-C); LBUFFER unchanged
+#   2 — user cancelled (LBUFFER unchanged from caller's perspective)
 _vbas_dropdown_core() {
   local buffer="$LBUFFER"
   local rbuffer="$RBUFFER"
@@ -75,73 +79,99 @@ _vbas_dropdown_core() {
   return 0
 }
 
-# _vbas_cascade — after a successful pick, keep opening the dropdown
-# for the next level as long as it's useful.
-#
-# Stops when:
-#   - LBUFFER doesn't end in a space (user mid-token)
-#   - first token has no spec
-#   - the most recently completed token is an option (avoids re-showing
-#     the same option list at the same nesting level)
-#   - dropdown returns no matches or user cancels
+# Cascade: keep opening the next-level dropdown after each pick.
+# Stops on option flag (-x), no-match, cancel, or buffer not ending in space.
 _vbas_cascade() {
   while true; do
     [[ "$LBUFFER" == *' ' ]] || break
-
     local first_token="${LBUFFER%% *}"
     [[ -n "$first_token" ]] && _vbas_has_spec "$first_token" || break
 
-    # If the last completed token is an option (-x / --foo), cascading
-    # would just re-show the same options. Stop and let the user fill
-    # in the option's argument.
+    # If the most recent completed token is an option flag, stop —
+    # cascading would just re-show the same option list.
     local trimmed="${LBUFFER% }"
     local last="${trimmed##* }"
     [[ "$last" != -* ]] || break
 
     _vbas_dropdown_core
     case $? in
-      0) ;;       # picked, look for further cascade
+      0) ;;       # picked something; check if next level cascades
       *) break ;; # cancelled or no matches — stop
     esac
   done
   zle redisplay
 }
 
+# Reset auto-trigger state at the start of each new prompt.
+_vbas_reset_state() {
+  _VBAS_CASCADED_PREFIX=""
+}
+zle -N zle-line-init _vbas_reset_state
+
 # ----------------------------------------------------------------------------
-# Tab — explicit dropdown trigger
+# Tab — explicit dropdown trigger (always fires)
 # ----------------------------------------------------------------------------
 
 _vbas_widget() {
   emulate -L zsh
   _vbas_dropdown_core
   case $? in
-    0) _vbas_cascade ;;
-    1) zle expand-or-complete ;;  # fall back to default zsh completion
+    0) _vbas_cascade
+       _VBAS_CASCADED_PREFIX="$LBUFFER" ;;
+    1) zle expand-or-complete ;;
     2) zle redisplay ;;
   esac
 }
-
 zle -N _vbas_widget
 bindkey '^I' _vbas_widget
 
 # ----------------------------------------------------------------------------
-# Space — smart self-insert that auto-opens the dropdown
+# M4 — Space after a known command auto-opens the dropdown
 # ----------------------------------------------------------------------------
 
 _vbas_smart_space() {
   emulate -L zsh
-  zle .self-insert  # insert the space first
+  zle .self-insert
 
-  # Auto-open only when:
-  #   - buffer now ends in a space (it should, since we just inserted one)
-  #   - the first token of the buffer has a spec
+  _vbas_should_suppress && return
+
   if [[ "$LBUFFER" == *' ' ]]; then
     local first_token="${LBUFFER%% *}"
     if [[ -n "$first_token" ]] && _vbas_has_spec "$first_token"; then
       _vbas_cascade
+      _VBAS_CASCADED_PREFIX="$LBUFFER"
     fi
   fi
 }
-
 zle -N _vbas_smart_space
 bindkey ' ' _vbas_smart_space
+
+# ----------------------------------------------------------------------------
+# M4.1 — typing a known command name (no space yet) also auto-opens
+# ----------------------------------------------------------------------------
+
+# Overrides the default self-insert. Every printable char goes through
+# here; we only act when LBUFFER is exactly a known command name with
+# no space yet. The space binding (above) takes precedence for ' '.
+_vbas_smart_self_insert() {
+  emulate -L zsh
+  zle .self-insert
+
+  _vbas_should_suppress && return
+
+  if [[ "$LBUFFER" != *' '* ]] && _vbas_has_spec "$LBUFFER"; then
+    local before="$LBUFFER"
+    LBUFFER="$LBUFFER "
+    _vbas_cascade
+
+    # If cascade fired but the user dismissed without picking anything,
+    # roll back the auto-inserted space so their typing flow continues
+    # naturally (no confusing extra whitespace).
+    if [[ "$LBUFFER" == "$before " ]]; then
+      LBUFFER="$before"
+    fi
+
+    _VBAS_CASCADED_PREFIX="$LBUFFER"
+  fi
+}
+zle -N self-insert _vbas_smart_self_insert
