@@ -14,7 +14,7 @@ $ git c
 
 Type a known command and a space — the dropdown opens automatically. Type letters to filter, arrows to navigate, Tab/Enter to accept, Esc to cancel. Tab on its own works too.
 
-> ⚠️ **Pre-MVP.** Ships with **29 imported specs** (git, docker, kubectl, helm, terraform, npm, cargo, ssh, curl, ...) — see [`specs/fig/`](./specs/fig). Dynamic completions like live `git branch` names land in M6.
+> ⚠️ **Pre-MVP.** Ships with **61 imported specs** (git, docker, kubectl, helm, terraform, aws, gcloud, gh, tmux, vim/nvim, jq, psql, mysql, ...) — see [`specs/fig/`](./specs/fig). Dynamic completions like live `git branch` names land in M6.
 
 ## Why?
 
@@ -27,11 +27,11 @@ Type a known command and a space — the dropdown opens automatically. Type lett
 - **Auto-open dropdown** on space-after-known-command — no Tab required. The dropdown shows all subcommands or flags valid at the current position, with descriptions inline.
 - **Cascading levels** — pick a subcommand and the next dropdown (its flags) opens automatically. Stops cleanly when you reach an option flag.
 - **Tab also works** as an explicit trigger and falls back to default zsh completion when there's no spec.
-- **Type to filter** — case-insensitive substring match on name or description.
+- **Type to filter** — ranked: name-prefix > name-substring > description, case-insensitive. So `c` in a `git` dropdown floats `checkout`, `cherry-pick`, `clean`, `commit` to the top instead of burying them under description hits.
 - **Long-running daemon** for sub-ms steady-state latency (auto-spawned, in-process fallback if it can't bind).
 - **Distinctive UI** — cyan left-edge bar, position counter, key hints in the footer.
 - **Single static Go binary** — no Node, no runtime deps.
-- **Built-in specs for 29 commands** — `git`, `docker`, `kubectl`, `helm`, `terraform`, `make`, `go`, `cargo`, `rustc`, `python`/`python3`, `pip`, `node`, `npm`, `yarn`, `pnpm`, `ls`, `find`, `grep`, `sed`, `xargs`, `tar`, `curl`, `wget`, `ssh`, `scp`, `systemctl`, `apt`, `brew`. Imported from [Fig autocomplete](https://github.com/withfig/autocomplete) (MIT). Add more by editing [`tools/import-fig/commands.txt`](./tools/import-fig/commands.txt) and re-running the importer.
+- **Built-in specs for 61 commands** — dev tools (`git`, `docker`, `kubectl`, `helm`, `terraform`, `make`, `gh`, `podman`), languages (`go`, `cargo`, `rustc`, `python`, `pip`, `node`, `npm`, `yarn`, `pnpm`), cloud (`aws`, `gcloud`), shell (`ls`, `find`, `grep`, `sed`, `xargs`, `tar`, `cat`, `less`, `head`, `tail`, `man`, `mv`, `cp`, `rm`, `chmod`, `chown`), network (`curl`, `wget`, `ssh`, `scp`, `rsync`, `ping`, `nc`, `ssh-keygen`), system (`systemctl`, `apt`, `brew`, `ps`, `kill`, `top`, `htop`, `df`, `du`), databases (`psql`, `mysql`, `sqlite3`), data (`jq`), editors / multiplexers (`vim`, `nvim`, `tmux`, `screen`). Imported from [Fig autocomplete](https://github.com/withfig/autocomplete) (MIT). Add more by editing [`tools/import-fig/commands.txt`](./tools/import-fig/commands.txt) and re-running the importer.
 
 ## What it can't do yet
 

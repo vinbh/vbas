@@ -40,3 +40,58 @@ scp
 systemctl
 apt
 brew
+
+# Cloud
+aws
+gcloud
+
+# GitHub / dev workflow
+gh
+
+# Editors / terminal multiplexers
+vim
+nvim
+tmux
+screen
+
+# Databases
+psql
+mysql
+redis-cli
+sqlite3
+
+# Data / processing
+jq
+
+# Network / transfer
+rsync
+ping
+nc
+
+# Process / resource
+ps
+kill
+top
+htop
+df
+du
+
+# File operations
+mv
+cp
+rm
+chmod
+chown
+
+# Viewing
+cat
+less
+head
+tail
+man
+
+# SSH adjacent
+ssh-keygen
+
+# Containers
+podman
