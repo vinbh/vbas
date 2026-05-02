@@ -1,0 +1,13 @@
+{
+  "name": "vbas-fig-importer",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "description": "Imports curated specs from withfig/autocomplete into vbas's specs/fig/ directory.",
+  "scripts": {
+    "import": "tsx import.ts"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0"
+  }
+}

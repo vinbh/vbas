@@ -1,0 +1,42 @@
+# Curated list of CLI commands to import from withfig/autocomplete.
+# One command per line. Lines starting with # are ignored.
+
+# Dev tools
+git
+docker
+kubectl
+helm
+terraform
+make
+
+# Languages
+go
+cargo
+rustc
+python
+python3
+pip
+node
+npm
+yarn
+pnpm
+
+# Shell utilities
+ls
+find
+grep
+sed
+awk
+xargs
+tar
+
+# Network
+curl
+wget
+ssh
+scp
+
+# System
+systemctl
+apt
+brew

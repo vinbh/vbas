@@ -19,23 +19,37 @@ func NewLoader(dir string) *Loader {
 
 // Load returns the spec for cmd, or (nil, nil) if no spec exists.
 // Errors are returned only for IO/parse failures, not missing specs.
+//
+// Lookup order:
+//
+//  1. <dir>/<cmd>.json     — hand-rolled or hand-tuned spec
+//  2. <dir>/fig/<cmd>.json — auto-imported from withfig/autocomplete (M5+)
+//
+// Hand-rolled wins so users can override an imported spec without forking
+// the Fig catalog.
 func (l *Loader) Load(cmd string) (*Spec, error) {
 	if s, ok := l.cache[cmd]; ok {
 		return s, nil
 	}
-	path := filepath.Join(l.dir, cmd+".json")
-	data, err := os.ReadFile(path)
-	if err != nil {
-		if os.IsNotExist(err) {
-			l.cache[cmd] = nil
-			return nil, nil
+	candidates := []string{
+		filepath.Join(l.dir, cmd+".json"),
+		filepath.Join(l.dir, "fig", cmd+".json"),
+	}
+	for _, p := range candidates {
+		data, err := os.ReadFile(p)
+		if err != nil {
+			if os.IsNotExist(err) {
+				continue
+			}
+			return nil, err
 		}
-		return nil, err
+		var s Spec
+		if err := json.Unmarshal(data, &s); err != nil {
+			return nil, fmt.Errorf("parse %s: %w", p, err)
+		}
+		l.cache[cmd] = &s
+		return &s, nil
 	}
-	var s Spec
-	if err := json.Unmarshal(data, &s); err != nil {
-		return nil, fmt.Errorf("parse %s: %w", path, err)
-	}
-	l.cache[cmd] = &s
-	return &s, nil
+	l.cache[cmd] = nil
+	return nil, nil
 }
