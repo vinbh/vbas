@@ -45,6 +45,17 @@ _vbas_should_suppress() {
   [[ -n "$_VBAS_CASCADED_PREFIX" && "$LBUFFER" == "$_VBAS_CASCADED_PREFIX"* ]]
 }
 
+# Release the cascaded-prefix suppression if LBUFFER is shorter than the
+# prefix we recorded. That means the user backspaced past where the cascade
+# fired, so they should be allowed to re-trigger by typing forward again.
+# Called at the top of the smart_space / smart_self_insert widgets BEFORE
+# zle .self-insert, so we see the pre-insert buffer state.
+_vbas_release_if_backspaced() {
+  if [[ -n "$_VBAS_CASCADED_PREFIX" ]] && (( ${#LBUFFER} < ${#_VBAS_CASCADED_PREFIX} )); then
+    _VBAS_CASCADED_PREFIX=""
+  fi
+}
+
 # Invoke vbas's interactive dropdown for the current LBUFFER. Returns:
 #   0 — pick applied to LBUFFER
 #   1 — vbas had no matches (caller decides whether to fall through)
@@ -142,6 +153,7 @@ bindkey '^I' _vbas_widget
 
 _vbas_smart_space() {
   emulate -L zsh
+  _vbas_release_if_backspaced
   zle .self-insert
 
   _vbas_should_suppress && return
@@ -166,6 +178,7 @@ bindkey ' ' _vbas_smart_space
 # no space yet. The space binding (above) takes precedence for ' '.
 _vbas_smart_self_insert() {
   emulate -L zsh
+  _vbas_release_if_backspaced
   zle .self-insert
 
   _vbas_should_suppress && return
