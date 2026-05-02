@@ -3,6 +3,7 @@
 // Usage:
 //
 //	vbas complete --buffer "<line>" [--cursor N] [--specs DIR] [--json] [--interactive]
+//	vbas daemon   [--socket PATH] [--specs DIR]
 //	vbas version
 //
 // In --interactive mode the dropdown UI is drawn on /dev/tty and the
@@ -11,9 +12,15 @@
 //	0  — picked a value (stdout has it) or user cancelled (stdout empty)
 //	1  — internal error
 //	2  — nothing to suggest (no spec, no matches); shell should fall through
+//
+// The complete subcommand transparently uses a long-running vbas daemon
+// over a Unix socket when one is available (sub-millisecond round-trip).
+// If no daemon is running, the request is answered in-process and a
+// detached daemon is spawned in the background for the next request.
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -21,11 +28,13 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/vinbh/vbas/internal/client"
+	"github.com/vinbh/vbas/internal/daemon"
 	"github.com/vinbh/vbas/internal/spec"
 	"github.com/vinbh/vbas/internal/ui"
 )
 
-const version = "0.0.2"
+const version = "0.0.3"
 
 func main() {
 	if len(os.Args) < 2 {
@@ -35,6 +44,8 @@ func main() {
 	switch os.Args[1] {
 	case "complete":
 		runComplete(os.Args[2:])
+	case "daemon":
+		runDaemon(os.Args[2:])
 	case "version", "--version", "-v":
 		fmt.Printf("vbas %s\n", version)
 	case "help", "--help", "-h":
@@ -49,6 +60,7 @@ func main() {
 func usage(w *os.File) {
 	fmt.Fprintln(w, `usage:
   vbas complete --buffer <line> [--cursor N] [--specs DIR] [--json] [--interactive]
+  vbas daemon   [--socket PATH] [--specs DIR]
   vbas version`)
 }
 
@@ -76,10 +88,41 @@ func runComplete(args []string) {
 	outputPlain(suggestions, *asJSON)
 }
 
+func runDaemon(args []string) {
+	fs := flag.NewFlagSet("daemon", flag.ExitOnError)
+	sockPath := fs.String("socket", client.DefaultSocketPath(), "Unix socket path")
+	specsDir := fs.String("specs", defaultSpecsDir(), "directory containing JSON specs")
+	if err := fs.Parse(args); err != nil {
+		os.Exit(2)
+	}
+	if err := daemon.Run(context.Background(), *sockPath, *specsDir); err != nil {
+		fmt.Fprintf(os.Stderr, "vbas-daemon: %v\n", err)
+		os.Exit(1)
+	}
+}
+
+// getSuggestions tries the daemon first; on failure, answers in-process
+// AND fires off a detached daemon spawn so the next request hits the
+// fast path. The fallback keeps vbas usable even when the daemon can't
+// start (locked filesystem, weird permissions, etc).
 func getSuggestions(buffer, specsDir string) ([]spec.Suggestion, error) {
 	if buffer == "" {
 		return nil, nil
 	}
+
+	sockPath := client.DefaultSocketPath()
+	if s, err := client.TryDaemon(buffer, sockPath); err == nil {
+		return s, nil
+	}
+
+	// Daemon unavailable. Spawn one for next time (best-effort).
+	_ = client.SpawnDaemon(sockPath, specsDir)
+
+	// Answer this request in-process so the user isn't kept waiting.
+	return inProcessMatch(buffer, specsDir)
+}
+
+func inProcessMatch(buffer, specsDir string) ([]spec.Suggestion, error) {
 	tokens := strings.Fields(buffer)
 	if len(tokens) == 0 {
 		return nil, nil
