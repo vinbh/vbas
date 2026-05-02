@@ -107,21 +107,48 @@ type dropdown struct {
 	tty       *os.File
 }
 
-// refilter rebuilds d.filtered from d.items and d.query (case-insensitive
-// substring match against Value or Description). Resets selected/viewStart
-// to the top of the new filtered list — when the user narrows or widens
-// the query, starting at the top is more useful than carrying the old
-// position over.
+// refilter rebuilds d.filtered from d.items and d.query, ranked into three
+// tiers (best to worst) and concatenated:
+//
+//  1. Value has the query as a prefix (e.g. "checkout" for query "ch")
+//  2. Value has the query as a substring (e.g. "switch" for query "tc")
+//  3. Description contains the query (and Value didn't already match)
+//
+// Within each tier the original item order is preserved. The reason for
+// the tiers: with plain substring-on-Value-or-Description, typing a single
+// common letter like "c" matched ~half the git subcommands because their
+// descriptions contain "changes"/"control"/"tracked", drowning the items
+// the user was actually trying to reach. Tier-1 items now float to the top.
+//
+// Empty query short-circuits to "all items, original order". Selected
+// position and viewport reset to top — when the user narrows the query,
+// the most-relevant match is what they want highlighted next.
 func (d *dropdown) refilter() {
 	d.filtered = d.filtered[:0]
 	q := strings.ToLower(d.query)
-	for i, it := range d.items {
-		if q == "" ||
-			strings.Contains(strings.ToLower(it.Value), q) ||
-			strings.Contains(strings.ToLower(it.Description), q) {
+	if q == "" {
+		for i := range d.items {
 			d.filtered = append(d.filtered, i)
 		}
+		d.selected = 0
+		d.viewStart = 0
+		return
 	}
+	var prefixHits, substringHits, descHits []int
+	for i, it := range d.items {
+		v := strings.ToLower(it.Value)
+		switch {
+		case strings.HasPrefix(v, q):
+			prefixHits = append(prefixHits, i)
+		case strings.Contains(v, q):
+			substringHits = append(substringHits, i)
+		case strings.Contains(strings.ToLower(it.Description), q):
+			descHits = append(descHits, i)
+		}
+	}
+	d.filtered = append(d.filtered, prefixHits...)
+	d.filtered = append(d.filtered, substringHits...)
+	d.filtered = append(d.filtered, descHits...)
 	d.selected = 0
 	d.viewStart = 0
 }

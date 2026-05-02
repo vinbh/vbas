@@ -173,3 +173,76 @@ func contains(haystack, needle string) bool {
 	}
 	return false
 }
+
+func TestRefilterRanksPrefixThenSubstringThenDescription(t *testing.T) {
+	// Simulate the "git c" scenario: many subcommands have a description
+	// containing "c" but only a few start with "c". Prefix-name hits should
+	// come first, value-substring next, description-only matches last.
+	items := []Item{
+		{Value: "add", Description: "Add file contents to the index"}, // desc-only
+		{Value: "branch", Description: "List, create, or delete branches"},
+		{Value: "checkout", Description: "Switch branches"}, // prefix
+		{Value: "cherry-pick", Description: "Apply changes"}, // prefix
+		{Value: "clean", Description: "Remove untracked files"}, // prefix
+		{Value: "commit", Description: "Record changes"}, // prefix
+		{Value: "diff", Description: "Show changes"},  // desc-only
+		{Value: "switch", Description: "Switch branches"}, // value-substring
+		{Value: "init", Description: "Create an empty repo"}, // desc-only
+	}
+	d := &dropdown{items: items, query: "c"}
+	d.refilter()
+
+	got := make([]string, 0, len(d.filtered))
+	for _, idx := range d.filtered {
+		got = append(got, items[idx].Value)
+	}
+
+	// Tier 1 (prefix): checkout, cherry-pick, clean, commit (in original order)
+	// Tier 2 (value-substring): branch, switch
+	// Tier 3 (description-only): add, diff, init
+	want := []string{
+		"checkout", "cherry-pick", "clean", "commit",
+		"branch", "switch",
+		"add", "diff", "init",
+	}
+	if len(got) != len(want) {
+		t.Fatalf("got %d items, want %d. got=%v", len(got), len(want), got)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Errorf("position %d: got %q, want %q. full got=%v", i, got[i], want[i], got)
+		}
+	}
+}
+
+func TestRefilterEmptyQueryShowsAllInOrder(t *testing.T) {
+	items := []Item{
+		{Value: "alpha"},
+		{Value: "bravo"},
+		{Value: "charlie"},
+	}
+	d := &dropdown{items: items, query: ""}
+	d.refilter()
+
+	if len(d.filtered) != 3 {
+		t.Fatalf("want all 3 items, got %d", len(d.filtered))
+	}
+	for i, idx := range d.filtered {
+		if idx != i {
+			t.Errorf("expected original order, position %d has index %d", i, idx)
+		}
+	}
+}
+
+func TestRefilterCaseInsensitive(t *testing.T) {
+	items := []Item{
+		{Value: "ChEcKoUt"},
+		{Value: "Switch"},
+	}
+	d := &dropdown{items: items, query: "CHECK"}
+	d.refilter()
+
+	if len(d.filtered) != 1 || d.filtered[0] != 0 {
+		t.Fatalf("want 1 match (ChEcKoUt), got %v", d.filtered)
+	}
+}
