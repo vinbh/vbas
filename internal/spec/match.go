@@ -71,6 +71,9 @@ func Match(s *Spec, buffer, cwd string) []Suggestion {
 		}
 	}
 
+	// Order: subcommands first, then generator results (files/folders),
+	// then option flags. This keeps filesystem entries near the top for
+	// commands where path args are the primary use (ls, vim, cat, cd…).
 	var out []Suggestion
 	for _, sub := range curSubs {
 		for _, n := range sub.Name {
@@ -83,6 +86,9 @@ func Match(s *Spec, buffer, cwd string) []Suggestion {
 			}
 		}
 	}
+	if arg := pickArg(curArgs, positionalIdx); arg != nil && len(arg.Template) > 0 {
+		out = append(out, RunTemplates(arg.Template, cwd, prefix)...)
+	}
 	for _, opt := range curOpts {
 		for _, n := range opt.Name {
 			if strings.HasPrefix(n, prefix) {
@@ -93,9 +99,6 @@ func Match(s *Spec, buffer, cwd string) []Suggestion {
 				})
 			}
 		}
-	}
-	if arg := pickArg(curArgs, positionalIdx); arg != nil && len(arg.Template) > 0 {
-		out = append(out, RunTemplates(arg.Template, cwd, prefix)...)
 	}
 	return out
 }

@@ -1,15 +1,13 @@
-# vbas-autosuggest zsh integration (M2 + M4 + M4.1 + M4.2)
+# vbas-autosuggest zsh integration (M2 + M4 + M4.2)
 #
 # Usage: source this file from your .zshrc:
 #
 #   export VBAS_SPECS_DIR=/path/to/vbas/specs
 #   source /path/to/vbas/shell/zsh/vbas.zsh
 #
-# Three triggers, all opening the same dropdown UI:
+# Two triggers, both opening the same dropdown UI:
 #
 #   * Tab — explicit user trigger (always fires; bypasses suppression).
-#   * Typing a known command name (e.g., `git`) — auto-trigger via the
-#     self-insert override; opens the subcommand dropdown immediately.
 #   * Space after a known command — auto-trigger via the space binding.
 #
 # After one auto-trigger has fired on a command line, further typing on
@@ -78,15 +76,18 @@ _vbas_dropdown_core() {
   fi
 
   # Replace trailing partial token (or append if buffer ends in space).
-  local newbuf
+  # Directory picks (ending in /) get no trailing space so the cascade can
+  # immediately drill into the selected directory on the next iteration.
+  local newbuf trail
+  [[ "$pick" == */ ]] && trail="" || trail=" "
   if [[ -z "$buffer" || "$buffer" == *' ' ]]; then
-    newbuf="${buffer}${pick} "
+    newbuf="${buffer}${pick}${trail}"
   else
     local prefix="${buffer% *}"
     if [[ "$prefix" == "$buffer" ]]; then
-      newbuf="${pick} "
+      newbuf="${pick}${trail}"
     else
-      newbuf="${prefix} ${pick} "
+      newbuf="${prefix} ${pick}${trail}"
     fi
   fi
 
@@ -99,7 +100,9 @@ _vbas_dropdown_core() {
 # Stops on option flag (-x), no-match, cancel, or buffer not ending in space.
 _vbas_cascade() {
   while true; do
-    [[ "$LBUFFER" == *' ' ]] || break
+    # Continue when buffer ends in a space (new token position) or in /
+    # (user picked a directory; drill into it without inserting a space).
+    [[ "$LBUFFER" == *' ' || "$LBUFFER" == */ ]] || break
     local first_token="${LBUFFER%% *}"
     [[ -n "$first_token" ]] && _vbas_has_spec "$first_token" || break
 
@@ -171,33 +174,7 @@ _vbas_smart_space() {
 zle -N _vbas_smart_space
 bindkey ' ' _vbas_smart_space
 
-# ----------------------------------------------------------------------------
-# M4.1 — typing a known command name (no space yet) also auto-opens
-# ----------------------------------------------------------------------------
-
-# Overrides the default self-insert. Every printable char goes through
-# here; we only act when LBUFFER is exactly a known command name with
-# no space yet. The space binding (above) takes precedence for ' '.
-_vbas_smart_self_insert() {
-  emulate -L zsh
-  _vbas_release_if_backspaced
-  zle .self-insert
-
-  _vbas_should_suppress && return
-
-  if [[ "$LBUFFER" != *' '* ]] && _vbas_has_spec "$LBUFFER"; then
-    local before="$LBUFFER"
-    LBUFFER="$LBUFFER "
-    _vbas_cascade
-
-    # If cascade fired but the user dismissed without picking anything,
-    # roll back the auto-inserted space so their typing flow continues
-    # naturally (no confusing extra whitespace).
-    if [[ "$LBUFFER" == "$before " ]]; then
-      LBUFFER="$before"
-    fi
-
-    _VBAS_CASCADED_PREFIX="$LBUFFER"
-  fi
-}
-zle -N self-insert _vbas_smart_self_insert
+# M4.1 (auto-open on typing the command name, before space) was removed.
+# It fired too eagerly when a command name was a prefix of another (e.g.
+# "vi" triggered while the user was still typing "vim"). Space is the
+# unambiguous trigger; Tab still works as an explicit fallback.
