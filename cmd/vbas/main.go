@@ -110,8 +110,9 @@ func getSuggestions(buffer, specsDir string) ([]spec.Suggestion, error) {
 		return nil, nil
 	}
 
+	cwd, _ := os.Getwd()
 	sockPath := client.DefaultSocketPath()
-	if s, err := client.TryDaemon(buffer, sockPath); err == nil {
+	if s, err := client.TryDaemon(buffer, cwd, sockPath); err == nil {
 		return s, nil
 	}
 
@@ -119,10 +120,10 @@ func getSuggestions(buffer, specsDir string) ([]spec.Suggestion, error) {
 	_ = client.SpawnDaemon(sockPath, specsDir)
 
 	// Answer this request in-process so the user isn't kept waiting.
-	return inProcessMatch(buffer, specsDir)
+	return inProcessMatch(buffer, cwd, specsDir)
 }
 
-func inProcessMatch(buffer, specsDir string) ([]spec.Suggestion, error) {
+func inProcessMatch(buffer, cwd, specsDir string) ([]spec.Suggestion, error) {
 	tokens := strings.Fields(buffer)
 	if len(tokens) == 0 {
 		return nil, nil
@@ -135,7 +136,7 @@ func inProcessMatch(buffer, specsDir string) ([]spec.Suggestion, error) {
 	if s == nil {
 		return nil, nil
 	}
-	return spec.Match(s, buffer), nil
+	return spec.Match(s, buffer, cwd), nil
 }
 
 // outputInteractive handles the --interactive case. Exits 2 with empty

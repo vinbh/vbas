@@ -115,7 +115,7 @@ func handleConn(conn net.Conn, loader *spec.Loader) {
 	switch req.Op {
 	case "complete":
 		_ = json.NewEncoder(conn).Encode(proto.Response{
-			Suggestions: completeBuffer(req.Buffer, loader),
+			Suggestions: completeBuffer(req.Buffer, req.Cwd, loader),
 		})
 	case "ping":
 		_ = json.NewEncoder(conn).Encode(proto.Response{})
@@ -124,7 +124,7 @@ func handleConn(conn net.Conn, loader *spec.Loader) {
 	}
 }
 
-func completeBuffer(buffer string, loader *spec.Loader) []spec.Suggestion {
+func completeBuffer(buffer, cwd string, loader *spec.Loader) []spec.Suggestion {
 	if buffer == "" {
 		return nil
 	}
@@ -136,7 +136,7 @@ func completeBuffer(buffer string, loader *spec.Loader) []spec.Suggestion {
 	if err != nil || s == nil {
 		return nil
 	}
-	return spec.Match(s, buffer)
+	return spec.Match(s, buffer, cwd)
 }
 
 func writeError(conn net.Conn, msg string) {

@@ -38,9 +38,33 @@ type Option struct {
 
 // Arg describes a positional argument.
 type Arg struct {
-	Name        string `json:"name,omitempty"`
-	Description string `json:"description,omitempty"`
-	IsOptional  bool   `json:"isOptional,omitempty"`
+	Name        string    `json:"name,omitempty"`
+	Description string    `json:"description,omitempty"`
+	IsOptional  bool      `json:"isOptional,omitempty"`
+	IsVariadic  bool      `json:"isVariadic,omitempty"`
+	Template    Templates `json:"template,omitempty"`
+}
+
+// Templates is one or more built-in generator names ("filepaths", "folders",
+// "history"). Fig allows either a single string or an array.
+type Templates []string
+
+func (t *Templates) UnmarshalJSON(data []byte) error {
+	data = bytes.TrimSpace(data)
+	if len(data) > 0 && data[0] == '"' {
+		var single string
+		if err := json.Unmarshal(data, &single); err != nil {
+			return err
+		}
+		*t = Templates{single}
+		return nil
+	}
+	var list []string
+	if err := json.Unmarshal(data, &list); err != nil {
+		return err
+	}
+	*t = list
+	return nil
 }
 
 // Names is either a single string or array of strings, matching Fig's

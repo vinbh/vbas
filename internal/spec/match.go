@@ -11,7 +11,10 @@ type Suggestion struct {
 
 // Match returns suggestions for the given buffer using the provided spec.
 // M1 ignores the cursor and always completes the trailing token of the buffer.
-func Match(s *Spec, buffer string) []Suggestion {
+// cwd is the client's working directory; used by filepath/folder generators
+// (M5.5). Pass an empty string when not applicable — Match still works, but
+// generators that need cwd will be skipped.
+func Match(s *Spec, buffer, cwd string) []Suggestion {
 	if s == nil {
 		return nil
 	}
@@ -31,15 +34,21 @@ func Match(s *Spec, buffer string) []Suggestion {
 
 	curSubs := s.Subcommands
 	curOpts := s.Options
+	curArgs := s.Args
 
-	for _, tok := range rest {
+	// Descend into matched subcommands, leaving `i` at the first token that's
+	// a positional arg (or len(rest) if all consumed).
+	i := 0
+	for i < len(rest) {
+		tok := rest[i]
 		if strings.HasPrefix(tok, "-") {
+			i++
 			continue
 		}
 		var matched *Subcommand
-		for i := range curSubs {
-			if namesContain(curSubs[i].Name, tok) {
-				matched = &curSubs[i]
+		for j := range curSubs {
+			if namesContain(curSubs[j].Name, tok) {
+				matched = &curSubs[j]
 				break
 			}
 		}
@@ -48,6 +57,18 @@ func Match(s *Spec, buffer string) []Suggestion {
 		}
 		curSubs = matched.Subcommands
 		curOpts = matched.Options
+		curArgs = matched.Args
+		i++
+	}
+
+	// Number of positional args already typed (i.e. completed tokens past
+	// the descent breakpoint that aren't option flags). The trailing `prefix`
+	// itself is the NEXT positional, still being typed.
+	positionalIdx := 0
+	for j := i; j < len(rest); j++ {
+		if !strings.HasPrefix(rest[j], "-") {
+			positionalIdx++
+		}
 	}
 
 	var out []Suggestion
@@ -73,7 +94,27 @@ func Match(s *Spec, buffer string) []Suggestion {
 			}
 		}
 	}
+	if arg := pickArg(curArgs, positionalIdx); arg != nil && len(arg.Template) > 0 {
+		out = append(out, RunTemplates(arg.Template, cwd, prefix)...)
+	}
 	return out
+}
+
+// pickArg returns the Arg whose positional slot the user is currently typing
+// into. Returns nil when there are no args defined or the user has typed past
+// a non-variadic tail.
+func pickArg(args Args, idx int) *Arg {
+	if len(args) == 0 {
+		return nil
+	}
+	if idx < len(args) {
+		return &args[idx]
+	}
+	last := &args[len(args)-1]
+	if last.IsVariadic {
+		return last
+	}
+	return nil
 }
 
 func namesContain(names Names, tok string) bool {

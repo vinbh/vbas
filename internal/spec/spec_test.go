@@ -35,6 +35,36 @@ func TestArgsUnmarshalEmptyArray(t *testing.T) {
 	}
 }
 
+func TestArgUnmarshalTemplateString(t *testing.T) {
+	var a Arg
+	if err := json.Unmarshal([]byte(`{"name":"path","template":"filepaths"}`), &a); err != nil {
+		t.Fatal(err)
+	}
+	if len(a.Template) != 1 || a.Template[0] != "filepaths" {
+		t.Fatalf("want [filepaths], got %+v", a.Template)
+	}
+}
+
+func TestArgUnmarshalTemplateArray(t *testing.T) {
+	var a Arg
+	if err := json.Unmarshal([]byte(`{"name":"path","template":["filepaths","folders"]}`), &a); err != nil {
+		t.Fatal(err)
+	}
+	if len(a.Template) != 2 || a.Template[0] != "filepaths" || a.Template[1] != "folders" {
+		t.Fatalf("want [filepaths,folders], got %+v", a.Template)
+	}
+}
+
+func TestArgUnmarshalIsVariadic(t *testing.T) {
+	var a Arg
+	if err := json.Unmarshal([]byte(`{"name":"src","isVariadic":true,"template":["filepaths","folders"]}`), &a); err != nil {
+		t.Fatal(err)
+	}
+	if !a.IsVariadic {
+		t.Fatalf("want isVariadic true, got %+v", a)
+	}
+}
+
 // Inline a Fig-shaped option that uses the single-object form for `args`
 // (e.g. `git commit --message <msg>`) and verify it parses end-to-end.
 func TestSpecParsesFigStyleSingleArg(t *testing.T) {

@@ -46,7 +46,7 @@ func DefaultSocketPath() string {
 // Returns (suggestions, nil) on success; (nil, err) if the daemon isn't
 // reachable or the request failed. Does NOT spawn a daemon — that's a
 // separate decision for the caller via SpawnDaemon.
-func TryDaemon(buffer, sockPath string) ([]spec.Suggestion, error) {
+func TryDaemon(buffer, cwd, sockPath string) ([]spec.Suggestion, error) {
 	conn, err := net.DialTimeout("unix", sockPath, dialTimeout)
 	if err != nil {
 		return nil, err
@@ -58,6 +58,7 @@ func TryDaemon(buffer, sockPath string) ([]spec.Suggestion, error) {
 	if err := json.NewEncoder(conn).Encode(proto.Request{
 		Op:     "complete",
 		Buffer: buffer,
+		Cwd:    cwd,
 	}); err != nil {
 		return nil, err
 	}

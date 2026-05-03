@@ -45,7 +45,7 @@ func TestDefaultSocketPath(t *testing.T) {
 func TestTryDaemonNoSocket(t *testing.T) {
 	tmp := t.TempDir()
 	bogus := filepath.Join(tmp, "does-not-exist.sock")
-	_, err := TryDaemon("git c", bogus)
+	_, err := TryDaemon("git c", "", bogus)
 	if err == nil {
 		t.Fatal("expected error dialing nonexistent socket")
 	}

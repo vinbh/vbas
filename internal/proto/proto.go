@@ -14,6 +14,7 @@ type Request struct {
 	Op     string `json:"op"`               // "complete" today; "ping"/"shutdown"/etc. later
 	Buffer string `json:"buffer,omitempty"` // current command line for op="complete"
 	Cursor int    `json:"cursor,omitempty"` // reserved
+	Cwd    string `json:"cwd,omitempty"`    // client's working directory; needed for filepath generators
 }
 
 // Response is what the daemon writes back. Exactly one of Suggestions
