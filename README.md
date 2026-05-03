@@ -14,7 +14,7 @@ $ git c
 
 Type a known command and a space — the dropdown opens automatically. Type letters to filter, arrows to navigate, Tab/Enter to accept, Esc to cancel. Tab on its own works too.
 
-> ⚠️ **Pre-MVP.** Ships with **61 imported specs** (git, docker, kubectl, helm, terraform, aws, gcloud, gh, tmux, vim/nvim, jq, psql, mysql, ...) — see [`specs/fig/`](./specs/fig). Dynamic completions like live `git branch` names land in M6.
+> ⚠️ **Pre-MVP.** Ships with **63 imported specs** (git, docker, kubectl, helm, terraform, aws, gcloud, gh, tmux, vim/nvim, jq, psql, mysql, cd, ...) — see [`specs/fig/`](./specs/fig). File and folder completion (`cd`, `cp`, `vim <Tab>`) works against the live filesystem. Dynamic JS generators (live `git branch` names etc.) land in M6.
 
 ## Why?
 
@@ -27,18 +27,21 @@ Type a known command and a space — the dropdown opens automatically. Type lett
 - **Auto-open dropdown** on space-after-known-command — no Tab required. The dropdown shows all subcommands or flags valid at the current position, with descriptions inline.
 - **Cascading levels** — pick a subcommand and the next dropdown (its flags) opens automatically. Stops cleanly when you reach an option flag.
 - **Tab also works** as an explicit trigger and falls back to default zsh completion when there's no spec.
+- **File / folder completion** — `cd <Tab>` lists folders in the cwd; `cat /etc/<Tab>` lists files under `/etc`; `vim ~/Doc<Tab>` resolves and filters under `$HOME/Doc...` while preserving the `~`. Most existing specs that declare `template:filepaths|folders` (cp, rm, mv, find, head, tail, scp, chmod, chown, du, …) work against the live filesystem.
 - **Type to filter** — ranked: name-prefix > name-substring > description, case-insensitive. So `c` in a `git` dropdown floats `checkout`, `cherry-pick`, `clean`, `commit` to the top instead of burying them under description hits.
 - **Long-running daemon** for sub-ms steady-state latency (auto-spawned, in-process fallback if it can't bind).
 - **Distinctive UI** — cyan left-edge bar, position counter, key hints in the footer.
 - **Single static Go binary** — no Node, no runtime deps.
-- **Built-in specs for 61 commands** — dev tools (`git`, `docker`, `kubectl`, `helm`, `terraform`, `make`, `gh`, `podman`), languages (`go`, `cargo`, `rustc`, `python`, `pip`, `node`, `npm`, `yarn`, `pnpm`), cloud (`aws`, `gcloud`), shell (`ls`, `find`, `grep`, `sed`, `xargs`, `tar`, `cat`, `less`, `head`, `tail`, `man`, `mv`, `cp`, `rm`, `chmod`, `chown`), network (`curl`, `wget`, `ssh`, `scp`, `rsync`, `ping`, `nc`, `ssh-keygen`), system (`systemctl`, `apt`, `brew`, `ps`, `kill`, `top`, `htop`, `df`, `du`), databases (`psql`, `mysql`, `sqlite3`), data (`jq`), editors / multiplexers (`vim`, `nvim`, `tmux`, `screen`). Imported from [Fig autocomplete](https://github.com/withfig/autocomplete) (MIT). Add more by editing [`tools/import-fig/commands.txt`](./tools/import-fig/commands.txt) and re-running the importer.
+- **Built-in specs for 63 commands** — dev tools (`git`, `docker`, `kubectl`, `helm`, `terraform`, `make`, `gh`, `podman`), languages (`go`, `cargo`, `rustc`, `python`, `pip`, `node`, `npm`, `yarn`, `pnpm`), cloud (`aws`, `gcloud`), shell (`ls`, `find`, `grep`, `sed`, `xargs`, `tar`, `cat`, `less`, `head`, `tail`, `man`, `mv`, `cp`, `rm`, `chmod`, `chown`, `cd`), network (`curl`, `wget`, `ssh`, `scp`, `rsync`, `ping`, `nc`, `ssh-keygen`), system (`systemctl`, `apt`, `brew`, `ps`, `kill`, `top`, `htop`, `df`, `du`), databases (`psql`, `mysql`, `sqlite3`), data (`jq`), editors / multiplexers (`vim`, `vi`, `nvim`, `tmux`, `screen`). Imported from [Fig autocomplete](https://github.com/withfig/autocomplete) (MIT). Add more by editing [`tools/import-fig/commands.txt`](./tools/import-fig/commands.txt) and re-running the importer.
 
 ## What it can't do yet
 
 | Capability | Lands in |
 |---|---|
 | Spec coverage for the rest of Fig's ~3000-CLI catalog | M5 polish (expand `commands.txt`) |
-| Dynamic generators (`git checkout <Tab>` autocompletes live branch names) | M6 (goja JS runtime) |
+| Dynamic JS generators (live `git checkout <branch>`, `kubectl` contexts, `aws` regions) | M6 (goja JS runtime) |
+| Shell-history-backed templates (`template:"history"`) | M6 |
+| Glob patterns, env-var expansion (`$HOME/<Tab>`), quoted paths | M6 |
 | bash and fish shells | M7 |
 | LLM fallback for unknown commands | post-M7 |
 | Packaging (deb/rpm/AUR/Homebrew) | M7+ |
@@ -116,8 +119,9 @@ The daemon auto-spawns on first use (fork + Setsid, no systemd plumbing). If it 
 - [x] **M2** — in-terminal ANSI dropdown UI + type-to-filter
 - [x] **M3** — long-running daemon over Unix socket (lazy auto-spawn, in-process fallback)
 - [x] **M4** — auto-open dropdown after space-after-known-command, with cascading levels
-- [x] **M5** — broader spec coverage via [Fig autocomplete](https://github.com/withfig/autocomplete) import (29 commands today; expand by editing `tools/import-fig/commands.txt`) ← *you are here*
-- [ ] **M6** — embedded `goja` JS engine for full Fig spec compatibility (live branch completion etc.)
+- [x] **M5** — broader spec coverage via [Fig autocomplete](https://github.com/withfig/autocomplete) import (63 commands today; expand by editing `tools/import-fig/commands.txt`)
+- [x] **M5.5** — file / folder generators (`cd`, `cp`, `vim <path>`) — Fig `template:"filepaths"|"folders"` evaluated natively against the cwd ← *you are here*
+- [ ] **M6** — embedded `goja` JS engine for full Fig spec compatibility (live branch completion, history template, custom generators)
 - [ ] **M7+** — bash/fish adapters · history-based ranking · LLM fallback · packaging (deb/rpm/AUR/brew)
 
 ## How vbas compares
