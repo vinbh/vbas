@@ -1,9 +1,9 @@
 # vbas
 
-**Smart command suggestions for the Linux terminal — Q-style dropdown, source-available.**
+**Amazon Q-style autocomplete for the Linux terminal. Free, source-available, no Node required.**
 
 ```
-$ git c
+$ git <space>
 ▍ checkout              Switch branches or restore working tree files
 ▍ cherry-pick           Apply changes from existing commits
 ▍ clean                 Remove untracked files from the working tree
@@ -12,48 +12,94 @@ $ git c
 ─── vbas ─── ↑↓ select · ⏎ accept · esc cancel · 1/5
 ```
 
-Type a known command and a space — the dropdown opens automatically. Type letters to filter, arrows to navigate, Tab/Enter to accept, Esc to cancel. Tab on its own works too.
+Type a known command, press space — a dropdown opens. Type to filter, arrows to move, Enter to accept. That's it.
 
-> ⚠️ **Pre-MVP.** Ships with **63 imported specs** (git, docker, kubectl, helm, terraform, aws, gcloud, gh, tmux, vim/nvim, jq, psql, mysql, cd, ...) — see [`specs/fig/`](./specs/fig). File and folder completion (`cd`, `cp`, `vim <Tab>`) works against the live filesystem. Dynamic JS generators (live `git branch` names etc.) land in M6.
+> ⚠️ **Pre-release.** Works well for daily use on the 63 built-in commands. Dynamic completions (live branch names, kubectl contexts) land in M6.
+
+---
+
+## What it looks like
+
+**Subcommand completion with cascading levels**
+
+```
+$ docker <space>
+▍ build                 Build an image from a Dockerfile
+▍ compose               Docker Compose
+▍ container             Manage containers
+▍ exec                  Execute a command in a running container
+▍ images                List images
+▍ pull                  Download an image from a registry
+▍ push                  Upload an image to a registry
+▍ run                   Create and run a new container from an image
+─── vbas ─── ↑↓ select · ⏎ accept · esc cancel · 1/17
+```
+
+Pick `run` → flag dropdown opens automatically.
+
+```
+$ docker run <space>
+▍ --detach              Run container in background and print container ID
+▍ --env                 Set environment variables
+▍ --interactive         Keep STDIN open even if not attached
+▍ --name                Assign a name to the container
+▍ --network             Connect a container to a network
+▍ --publish             Publish a container's port(s) to the host
+▍ --rm                  Automatically remove the container on exit
+▍ --volume              Bind mount a volume
+─── vbas ─── ↑↓ select · ⏎ accept · esc cancel · 1/30
+```
+
+**File and folder completion**
+
+```
+$ cd <space>
+▍ Documents/
+▍ Downloads/
+▍ Pictures/
+▍ workspace/
+─── vbas ─── ↑↓ select · ⏎ accept · esc cancel · 1/4
+```
+
+Pick `workspace/` → automatically drills in:
+
+```
+$ cd workspace/
+▍ vbas/
+▍ myproject/
+▍ scripts/
+─── vbas ─── ↑↓ select · ⏎ accept · esc cancel · 1/3
+```
+
+Works for `vim`, `cat`, `ls`, `cp`, `mv`, `rm`, `scp`, and most other commands that take file paths.
+
+**Type to filter — ranked by relevance**
+
+```
+$ git c
+▍ checkout              Switch branches or restore working tree files
+▍ cherry-pick           Apply changes from existing commits
+▍ clean                 Remove untracked files from the working tree
+▍ clone                 Clone a repository into a new directory
+▍ commit                Record changes to the repository
+─── vbas ─── ↑↓ select · ⏎ accept · esc cancel · 5/28
+```
+
+Name-prefix matches float to the top; description matches come after.
+
+---
 
 ## Why?
 
-[Amazon Q CLI](https://aws.amazon.com/q/developer/cli/)'s smart shell autocomplete is excellent — but it's macOS-only. [Fig](https://fig.io/), its predecessor, was also macOS-first. On Linux you've had two real choices: [`zsh-autosuggestions`](https://github.com/zsh-users/zsh-autosuggestions) (single-line greyed-out ghost text), or zsh's built-in completion (functional but visually noisy).
+[Amazon Q CLI](https://aws.amazon.com/q/developer/cli/)'s dropdown autocomplete is the best shell UX on a terminal — but it's **macOS-only**. [Fig](https://fig.io/), its predecessor, was the same. On Linux the alternatives are `zsh-autosuggestions` (single-line ghost text) or built-in zsh completion (functional, not pretty).
 
-**vbas brings the Q-style inline dropdown to Linux** — built in Go, free for personal use, source-available, designed to grow.
+**vbas brings the same experience to Linux**: inline dropdown, descriptions visible while you type, cascading through subcommand levels. Built in Go — single static binary, sub-millisecond latency, no Node or Python runtime.
 
-## What works today
+---
 
-- **Auto-open dropdown** on space-after-known-command — no Tab required. The dropdown shows all subcommands or flags valid at the current position, with descriptions inline.
-- **Cascading levels** — pick a subcommand and the next dropdown (its flags) opens automatically. Stops cleanly when you reach an option flag.
-- **Tab also works** as an explicit trigger and falls back to default zsh completion when there's no spec.
-- **File / folder completion** — `cd <Tab>` lists folders in the cwd; `cat /etc/<Tab>` lists files under `/etc`; `vim ~/Doc<Tab>` resolves and filters under `$HOME/Doc...` while preserving the `~`. Most existing specs that declare `template:filepaths|folders` (cp, rm, mv, find, head, tail, scp, chmod, chown, du, …) work against the live filesystem.
-- **Type to filter** — ranked: name-prefix > name-substring > description, case-insensitive. So `c` in a `git` dropdown floats `checkout`, `cherry-pick`, `clean`, `commit` to the top instead of burying them under description hits.
-- **Long-running daemon** for sub-ms steady-state latency (auto-spawned, in-process fallback if it can't bind).
-- **Distinctive UI** — cyan left-edge bar, position counter, key hints in the footer.
-- **Single static Go binary** — no Node, no runtime deps.
-- **Built-in specs for 63 commands** — dev tools (`git`, `docker`, `kubectl`, `helm`, `terraform`, `make`, `gh`, `podman`), languages (`go`, `cargo`, `rustc`, `python`, `pip`, `node`, `npm`, `yarn`, `pnpm`), cloud (`aws`, `gcloud`), shell (`ls`, `find`, `grep`, `sed`, `xargs`, `tar`, `cat`, `less`, `head`, `tail`, `man`, `mv`, `cp`, `rm`, `chmod`, `chown`, `cd`), network (`curl`, `wget`, `ssh`, `scp`, `rsync`, `ping`, `nc`, `ssh-keygen`), system (`systemctl`, `apt`, `brew`, `ps`, `kill`, `top`, `htop`, `df`, `du`), databases (`psql`, `mysql`, `sqlite3`), data (`jq`), editors / multiplexers (`vim`, `vi`, `nvim`, `tmux`, `screen`). Imported from [Fig autocomplete](https://github.com/withfig/autocomplete) (MIT). Add more by editing [`tools/import-fig/commands.txt`](./tools/import-fig/commands.txt) and re-running the importer.
+## Install
 
-## What it can't do yet
-
-| Capability | Lands in |
-|---|---|
-| Spec coverage for the rest of Fig's ~3000-CLI catalog | M5 polish (expand `commands.txt`) |
-| Dynamic JS generators (live `git checkout <branch>`, `kubectl` contexts, `aws` regions) | M6 (goja JS runtime) |
-| Shell-history-backed templates (`template:"history"`) | M6 |
-| Glob patterns, env-var expansion (`$HOME/<Tab>`), quoted paths | M6 |
-| bash and fish shells | M7 |
-| LLM fallback for unknown commands | post-M7 |
-| Packaging (deb/rpm/AUR/Homebrew) | M7+ |
-
-A few things vbas **won't** do, intentionally:
-
-- **No floating overlay** like Q on macOS. Linux has no universal cursor-pixel API and Wayland blocks the trick for security. vbas renders inline below your prompt — same approach as `fzf`, `atuin`, `inshellisense`. Closest practical Q-like experience on Linux.
-- **No telemetry, no network calls.** Everything runs locally.
-
-## Try it
-
-You'll need **Go 1.21+** and **zsh**.
+You need **Go 1.21+** and **zsh**.
 
 ```bash
 git clone https://github.com/vinbh/vbas.git
@@ -61,100 +107,129 @@ cd vbas
 ./install.sh
 ```
 
-That builds the binary, copies it to `~/.local/bin/vbas`, and drops the zsh hook + specs into `~/.config/vbas/`. One-time line for your `~/.zshrc`:
+Add one line to your `~/.zshrc`:
 
 ```bash
 source ~/.config/vbas/vbas.zsh
 ```
 
-Open a new shell. Try it:
+Open a new shell and start typing. `./uninstall.sh` removes everything; hand-rolled specs in `~/.config/vbas/specs/` are preserved.
 
-```
-git <space>           # dropdown auto-opens; type to filter
-git commit            # then <space>; flag dropdown auto-opens
-git ch<Tab>           # explicit Tab still works
-docker <space>        # 50+ docker subcommands; same flow for kubectl, gh, aws, ...
-```
+---
 
-To uninstall: `./uninstall.sh` (preserves any hand-rolled specs at `~/.config/vbas/specs/<cmd>.json`).
+## Built-in commands (63 today)
 
-### Hacking on the source
+| Category | Commands |
+|---|---|
+| Dev tools | `git`, `docker`, `kubectl`, `helm`, `terraform`, `make`, `gh`, `podman` |
+| Languages | `go`, `cargo`, `rustc`, `python`, `pip`, `node`, `npm`, `yarn`, `pnpm` |
+| Cloud | `aws`, `gcloud` |
+| Shell | `ls`, `find`, `grep`, `sed`, `xargs`, `tar`, `cat`, `less`, `head`, `tail`, `man`, `mv`, `cp`, `rm`, `chmod`, `chown`, `cd` |
+| Network | `curl`, `wget`, `ssh`, `scp`, `rsync`, `ping`, `nc`, `ssh-keygen` |
+| System | `systemctl`, `apt`, `brew`, `ps`, `kill`, `top`, `htop`, `df`, `du` |
+| Databases | `psql`, `mysql`, `sqlite3` |
+| Data | `jq` |
+| Editors / muxers | `vim`, `vi`, `nvim`, `tmux`, `screen` |
 
-If you're poking at vbas itself, you don't need to install — just point at the working tree:
+Specs are imported from [Fig autocomplete](https://github.com/withfig/autocomplete) (MIT). To add more: edit [`tools/import-fig/commands.txt`](./tools/import-fig/commands.txt) and re-run `npm run import`.
+
+---
+
+## What's not there yet
+
+| | Lands in |
+|---|---|
+| Live completions — `git checkout <branch>`, `kubectl` contexts, `aws` regions | M6 (JS runtime) |
+| More of Fig's ~3000-CLI catalog | M5 polish |
+| bash and fish shells | M7 |
+| LLM fallback for unknown commands | post-M7 |
+| Packages (deb/rpm/AUR/Homebrew) | M7+ |
+
+**No floating overlay** — Linux has no universal cursor-pixel API and Wayland blocks the trick. vbas renders inline, same as `fzf` and `atuin`. No telemetry, no network calls.
+
+---
+
+## Hacking on it
 
 ```bash
 go build -o ./bin/vbas ./cmd/vbas
 export PATH="$PWD/bin:$PATH"
 export VBAS_SPECS_DIR="$PWD/specs"
 source ./shell/zsh/vbas.zsh
-# After any rebuild: pkill -KILL -f 'vbas daemon'  (so the daemon picks up new code)
+# After rebuilding: pkill -KILL -f 'vbas daemon'
 ```
+
+```bash
+go test ./...
+go test -race ./...
+```
+
+---
 
 ## How it works
 
 ```
-zsh widget (Tab or auto-trigger on space)
-       │
-       ▼
-   vbas client ──unix socket──▶ vbas-daemon
-       │                              │
-       │                              ├─ load JSON spec for first token
-       │                              ├─ match remaining input against spec
-       ◀──── []Suggestion JSON ───────┘
-       ▼
-   open /dev/tty, raw mode, ANSI dropdown,
-   key loop with type-to-filter,
-   return picked value to stdout
-       │
-       ▼
-   zsh widget replaces last token, may cascade to next level
+zsh widget (space or Tab)
+      │
+      ▼
+  vbas client ──unix socket──▶ vbas-daemon
+      │                              │
+      │                              ├─ load spec for first token
+      │                              └─ match remaining input
+      ◀──── []Suggestion JSON ───────┘
+      ▼
+  /dev/tty raw mode → ANSI dropdown → pick returned to zsh
 ```
 
-The daemon auto-spawns on first use (fork + Setsid, no systemd plumbing). If it can't start, vbas falls back to in-process matching so the user is never left dead.
+The daemon is lazy-spawned on first use (fork + Setsid, no systemd plumbing). If it can't start, vbas answers in-process so the user is never blocked.
+
+---
 
 ## Roadmap
 
-- [x] **M0** — repo scaffold (license, CLA, layout)
-- [x] **M1** — zsh Tab completion via static JSON specs
-- [x] **M2** — in-terminal ANSI dropdown UI + type-to-filter
-- [x] **M3** — long-running daemon over Unix socket (lazy auto-spawn, in-process fallback)
-- [x] **M4** — auto-open dropdown after space-after-known-command, with cascading levels
-- [x] **M5** — broader spec coverage via [Fig autocomplete](https://github.com/withfig/autocomplete) import (63 commands today; expand by editing `tools/import-fig/commands.txt`)
-- [x] **M5.5** — file / folder generators (`cd`, `cp`, `vim <path>`) — Fig `template:"filepaths"|"folders"` evaluated natively against the cwd ← *you are here*
-- [ ] **M6** — embedded `goja` JS engine for full Fig spec compatibility (live branch completion, history template, custom generators)
-- [ ] **M7+** — bash/fish adapters · history-based ranking · LLM fallback · packaging (deb/rpm/AUR/brew)
+- [x] **M0** — scaffold
+- [x] **M1** — zsh Tab completion via JSON specs
+- [x] **M2** — ANSI dropdown + type-to-filter
+- [x] **M3** — long-running daemon (lazy auto-spawn, in-process fallback)
+- [x] **M4** — auto-open on space · cascading subcommand levels
+- [x] **M5** — 63 commands imported from [Fig autocomplete](https://github.com/withfig/autocomplete)
+- [x] **M5.5** — file / folder generators (`cd`, `vim`, `ls`, `cp`, …)
+- [ ] **M6** — embedded JS engine for live completions (branches, contexts, regions)
+- [ ] **M7+** — bash/fish · history ranking · LLM fallback · packaging
 
-## How vbas compares
+---
 
-|  | vbas (today) | zsh-autosuggestions | Amazon Q / Fig | inshellisense |
+## Comparison
+
+|  | vbas | zsh-autosuggestions | Amazon Q / Fig | inshellisense |
 |---|---|---|---|---|
 | Linux native | ✅ | ✅ | ❌ macOS only | ✅ |
-| Dropdown with descriptions | ✅ | ❌ inline ghost only | ✅ | ✅ |
-| Type-to-filter inside dropdown | ✅ | n/a | ✅ | ✅ |
-| Source-available | ✅ PolyForm-NC | ✅ MIT | ❌ proprietary | ✅ MIT |
-| Standalone binary | ✅ Go | ✅ pure shell | ❌ | ❌ Node runtime |
-| Auto-suggest while typing | ✅ on `cmd <space>` | ✅ ghost only | ✅ | ✅ |
+| Dropdown with descriptions | ✅ | ❌ ghost text | ✅ | ✅ |
+| File/folder completion | ✅ | ❌ | ✅ | ✅ |
+| Type-to-filter in dropdown | ✅ | n/a | ✅ | ✅ |
+| Standalone binary | ✅ Go | ✅ shell | ❌ | ❌ Node |
+| Source-available | ✅ PolyForm-NC | ✅ MIT | ❌ | ✅ MIT |
+
+---
 
 ## License
 
 [**PolyForm Noncommercial 1.0.0**](./LICENSE) — free for personal, hobby, research, and educational use.
 
-For **commercial use** (use within a for-profit organization in the course of business), [open an issue](https://github.com/vinbh/vbas/issues/new) or email the maintainer (`vinayakbhatt@mit.tc`).
+For **commercial use**, [open an issue](https://github.com/vinbh/vbas/issues/new) or email `vinayakbhatt@mit.tc`.
 
-Bundled CLI specs imported from [Fig autocomplete](https://github.com/withfig/autocomplete) (when added in M5) remain under their original MIT license; headers will be preserved.
+Specs from [Fig autocomplete](https://github.com/withfig/autocomplete) remain MIT-licensed; their headers are preserved in `specs/fig/`.
 
 ## Contributing
 
-PRs welcome. By submitting a contribution you agree to the [Contributor License Agreement](./CLA.md), which lets the project relicense your contribution as part of future commercial dual-licensing.
+PRs welcome. By submitting you agree to the [CLA](./CLA.md), which allows future commercial dual-licensing.
 
-If you want to add a spec for your favorite CLI, the JSON format is a strict subset of [Fig's spec schema](https://fig.io/docs/reference/spec) — see `specs/git.json` for a template.
+To add a spec: the JSON format is a subset of [Fig's spec schema](https://fig.io/docs/reference/spec). Drop a file in `specs/<cmd>.json` — it takes precedence over anything in `specs/fig/`.
 
-## Prior art and credits
+## Credits
 
-vbas stands on the shoulders of:
-
-- [`withfig/autocomplete`](https://github.com/withfig/autocomplete) — the Fig spec catalog (MIT)
-- [`microsoft/inshellisense`](https://github.com/microsoft/inshellisense) — the Node-based Fig port for the terminal
-- [`carapace-sh/carapace`](https://github.com/carapace-sh/carapace) — Go-based multi-shell completion engine
-- [`zsh-users/zsh-autosuggestions`](https://github.com/zsh-users/zsh-autosuggestions) — the inline-ghost Linux mainstay
-- `fzf`, `atuin`, `fish` — for the in-terminal UI patterns vbas borrows from
+- [`withfig/autocomplete`](https://github.com/withfig/autocomplete) — spec catalog (MIT)
+- [`microsoft/inshellisense`](https://github.com/microsoft/inshellisense) — Node-based Fig port
+- [`carapace-sh/carapace`](https://github.com/carapace-sh/carapace) — Go completion engine
+- [`zsh-users/zsh-autosuggestions`](https://github.com/zsh-users/zsh-autosuggestions) — the Linux ghost-text standard
+- `fzf`, `atuin`, `fish` — UI patterns
