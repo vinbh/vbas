@@ -1,0 +1,52 @@
+version: 2
+
+project_name: vbas
+
+before:
+  hooks:
+    - go mod tidy
+    - go test ./...
+
+builds:
+  - main: ./cmd/vbas
+    binary: vbas
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    env:
+      - CGO_ENABLED=0
+    ldflags:
+      - -s -w -X main.version={{.Version}}
+
+archives:
+  - format: tar.gz
+    name_template: "vbas_{{ .Os }}_{{ .Arch }}"
+    wrap_in_directory: true
+    files:
+      - specs/**
+      - shell/zsh/vbas.zsh
+      - install.sh
+      - uninstall.sh
+
+checksum:
+  name_template: "checksums.txt"
+
+release:
+  github:
+    owner: vinbh
+    name: vbas
+  draft: false
+  prerelease: auto
+
+changelog:
+  sort: asc
+  use: github
+  filters:
+    exclude:
+      - "^docs:"
+      - "^chore:"
+      - "Merge pull request"
+      - "Merge branch"
