@@ -86,8 +86,13 @@ func Match(s *Spec, buffer, cwd string) []Suggestion {
 			}
 		}
 	}
-	if arg := pickArg(curArgs, positionalIdx); arg != nil && len(arg.Template) > 0 {
-		out = append(out, RunTemplates(arg.Template, cwd, prefix)...)
+	if arg := pickArg(curArgs, positionalIdx); arg != nil {
+		if len(arg.Template) > 0 {
+			out = append(out, RunTemplates(arg.Template, cwd, prefix)...)
+		}
+		if len(arg.Generators) > 0 {
+			out = append(out, RunGenerators(arg.Generators, cwd, prefix)...)
+		}
 	}
 	for _, opt := range curOpts {
 		for _, n := range opt.Name {

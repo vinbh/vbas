@@ -38,11 +38,42 @@ type Option struct {
 
 // Arg describes a positional argument.
 type Arg struct {
-	Name        string    `json:"name,omitempty"`
-	Description string    `json:"description,omitempty"`
-	IsOptional  bool      `json:"isOptional,omitempty"`
-	IsVariadic  bool      `json:"isVariadic,omitempty"`
-	Template    Templates `json:"template,omitempty"`
+	Name        string     `json:"name,omitempty"`
+	Description string     `json:"description,omitempty"`
+	IsOptional  bool       `json:"isOptional,omitempty"`
+	IsVariadic  bool       `json:"isVariadic,omitempty"`
+	Template    Templates  `json:"template,omitempty"`
+	Generators  Generators `json:"generators,omitempty"`
+}
+
+// Generator describes a single runtime completion source. Script generators
+// run a shell command and parse stdout; template generators reuse the
+// built-in "filepaths"/"folders" expanders.
+type Generator struct {
+	Script   []string  `json:"script,omitempty"`
+	Template Templates `json:"template,omitempty"`
+}
+
+// Generators is either a single Generator object or an array of them.
+// Fig uses both forms depending on whether one or multiple sources are needed.
+type Generators []Generator
+
+func (g *Generators) UnmarshalJSON(data []byte) error {
+	data = bytes.TrimSpace(data)
+	if len(data) > 0 && data[0] == '{' {
+		var single Generator
+		if err := json.Unmarshal(data, &single); err != nil {
+			return err
+		}
+		*g = Generators{single}
+		return nil
+	}
+	var list []Generator
+	if err := json.Unmarshal(data, &list); err != nil {
+		return err
+	}
+	*g = list
+	return nil
 }
 
 // Templates is one or more built-in generator names ("filepaths", "folders",

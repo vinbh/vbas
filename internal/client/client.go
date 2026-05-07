@@ -22,10 +22,14 @@ import (
 	"github.com/vinbh/vbas/internal/spec"
 )
 
-// dialTimeout is the per-attempt deadline when talking to the daemon.
-// Sub-millisecond on Linux for an active socket; we just need a hard cap
-// in case something is wedged.
-const dialTimeout = 200 * time.Millisecond
+// connectTimeout is the deadline for the initial dial. Kept short so that
+// "daemon not running" fails fast and the client falls back to in-process.
+const connectTimeout = 200 * time.Millisecond
+
+// responseTimeout is the deadline for reading the daemon's reply once
+// connected. Generators may run external commands (git branch, kubectl get
+// pods, …) — 6 s covers the script timeout (5 s) plus encoding overhead.
+const responseTimeout = 6 * time.Second
 
 // DefaultSocketPath returns the canonical Unix socket path for this user.
 //
@@ -47,13 +51,13 @@ func DefaultSocketPath() string {
 // reachable or the request failed. Does NOT spawn a daemon — that's a
 // separate decision for the caller via SpawnDaemon.
 func TryDaemon(buffer, cwd, sockPath string) ([]spec.Suggestion, error) {
-	conn, err := net.DialTimeout("unix", sockPath, dialTimeout)
+	conn, err := net.DialTimeout("unix", sockPath, connectTimeout)
 	if err != nil {
 		return nil, err
 	}
 	defer conn.Close()
 
-	_ = conn.SetDeadline(time.Now().Add(dialTimeout))
+	_ = conn.SetDeadline(time.Now().Add(responseTimeout))
 
 	if err := json.NewEncoder(conn).Encode(proto.Request{
 		Op:     "complete",
