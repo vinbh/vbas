@@ -56,23 +56,13 @@ For `vim`, `cat`, `ls`, `cp`, `rm`, `scp` and most file commands - real filesyst
 
 ## Install
 
-### Pre-built binary
-
-Download the archive for your platform from [Releases](https://github.com/vinbh/vbas/releases/latest), extract, and run `install.sh`:
+### One-liner (recommended)
 
 ```bash
-# Linux x86_64
-curl -fsSL https://github.com/vinbh/vbas/releases/latest/download/vbas_linux_amd64.tar.gz | tar xz
-cd vbas_linux_amd64
-./install.sh
+curl -fsSL https://raw.githubusercontent.com/vinbh/vbas/main/get.sh | bash
 ```
 
-```bash
-# Linux arm64 (Raspberry Pi, AWS Graviton, etc.)
-curl -fsSL https://github.com/vinbh/vbas/releases/latest/download/vbas_linux_arm64.tar.gz | tar xz
-cd vbas_linux_arm64
-./install.sh
-```
+Detects your OS and architecture, downloads the right binary from [Releases](https://github.com/vinbh/vbas/releases/latest), and installs everything. No Go required.
 
 ### From source (requires Go 1.21+)
 
