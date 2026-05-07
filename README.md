@@ -82,8 +82,7 @@ For `vim`, `cat`, `ls`, `cp`, `rm`, `scp` and most other commands - real filesys
 
 | | Lands in |
 |---|---|
-| Live completions - `git checkout <branch>`, `kubectl` contexts, `aws` regions | M6 (embedded JS engine) |
-| More of Fig's ~3000-CLI catalog | M5 polish |
+| More of Fig's ~3000-CLI catalog | M7 |
 | bash and fish shells | M7 |
 | LLM fallback for unknown commands | post-M7 |
 | Packages (deb/rpm/AUR/Homebrew) | M7+ |
@@ -145,7 +144,7 @@ vhs demo/files.tape
 - [x] **M4** - auto-open on space · cascading subcommand levels
 - [x] **M5** - 63 commands imported from [Fig autocomplete](https://github.com/withfig/autocomplete)
 - [x] **M5.5** - file / folder generators (`cd`, `vim`, `ls`, `cp`, …)
-- [ ] **M6** - embedded JS engine for live completions (branches, contexts, regions)
+- [x] **M6** - live completions via script generators (git branches, kubectl resources, docker containers, aws profiles)
 - [ ] **M7+** - bash/fish · history ranking · LLM fallback · packaging
 
 ---
