@@ -1,0 +1,23 @@
+{
+  "_license": "MIT",
+  "_source": "https://github.com/withfig/autocomplete/blob/master/src/tee.ts",
+  "_generated": "tools/import-fig/import.ts",
+  "name": "tee",
+  "description": "Duplicate standard input",
+  "options": [
+    {
+      "name": "-a",
+      "description": "Append the output to the files rather than overwriting them"
+    },
+    {
+      "name": "-i",
+      "description": "Ignore the SIGINT signal"
+    }
+  ],
+  "args": {
+    "name": "file",
+    "description": "Pathname of an output file",
+    "isVariadic": true,
+    "template": "filepaths"
+  }
+}

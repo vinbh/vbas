@@ -1,15 +1,53 @@
 # Curated list of CLI commands to import from withfig/autocomplete.
 # One command per line. Lines starting with # are ignored.
 
-# Dev tools
+# Dev tools (core)
 git
 docker
 kubectl
 helm
 terraform
 make
+gh
+podman
 
-# Languages
+# Container ecosystem
+docker-compose
+buildah
+skopeo
+
+# Kubernetes ecosystem
+kind
+minikube
+kustomize
+k3d
+flux
+argocd
+istioctl
+kubectx
+kubens
+
+# Infrastructure / IaC
+pulumi
+ansible
+ansible-playbook
+vagrant
+packer
+vault
+consul
+nomad
+
+# Cloud CLIs
+aws
+gcloud
+az
+doctl
+heroku
+fly
+vercel
+netlify
+
+# Languages & runtimes
 go
 cargo
 rustc
@@ -20,6 +58,32 @@ node
 npm
 yarn
 pnpm
+ruby
+gem
+bundle
+swift
+dotnet
+java
+kotlin
+
+# Language version managers
+nvm
+rbenv
+pyenv
+asdf
+
+# Python packaging
+poetry
+pipenv
+conda
+
+# Build tools
+cmake
+gradle
+mvn
+ant
+bazel
+meson
 
 # Shell utilities
 ls
@@ -29,53 +93,13 @@ sed
 awk
 xargs
 tar
-
-# Network
-curl
-wget
-ssh
-scp
-
-# System
-systemctl
-apt
-brew
-
-# Cloud
-aws
-gcloud
-
-# GitHub / dev workflow
-gh
-
-# Editors / terminal multiplexers
-vim
-vi
-nvim
-tmux
-screen
-
-# Databases
-psql
-mysql
-redis-cli
-sqlite3
-
-# Data / processing
-jq
-
-# Network / transfer
-rsync
-ping
-nc
-
-# Process / resource
-ps
-kill
-top
-htop
-df
-du
+cut
+sort
+uniq
+wc
+tee
+diff
+patch
 
 # File operations
 mv
@@ -84,16 +108,101 @@ rm
 chmod
 chown
 cd
+ln
+mkdir
+touch
+rsync
+scp
 
-# Viewing
+# Viewing / paging
 cat
 less
 head
 tail
 man
+bat
 
-# SSH adjacent
+# Network
+curl
+wget
+ssh
 ssh-keygen
+ping
+nc
+nmap
+netstat
+ss
+ip
+dig
+nslookup
+traceroute
+tcpdump
+openssl
 
-# Containers
-podman
+# System / process
+systemctl
+journalctl
+ps
+kill
+top
+htop
+df
+du
+lsof
+strace
+free
+uname
+uptime
+dmesg
+cron
+crontab
+
+# Package managers
+apt
+apt-get
+brew
+yum
+dnf
+pacman
+snap
+flatpak
+
+# Editors / multiplexers
+vim
+vi
+nvim
+emacs
+nano
+tmux
+screen
+
+# Databases
+psql
+mysql
+sqlite3
+mongosh
+redis-cli
+clickhouse
+
+# Data / processing
+jq
+yq
+xmllint
+csvkit
+
+# Version control (non-git)
+svn
+
+# Nix
+nix
+nix-env
+
+# Secrets / PKI
+gpg
+age
+
+# Misc developer tools
+direnv
+pre-commit
+goreleaser
+act

@@ -46,6 +46,8 @@ func main() {
 		runComplete(os.Args[2:])
 	case "daemon":
 		runDaemon(os.Args[2:])
+	case "setup":
+		runSetup()
 	case "version", "--version", "-v":
 		fmt.Printf("vbas %s\n", version)
 	case "help", "--help", "-h":
@@ -61,6 +63,7 @@ func usage(w *os.File) {
 	fmt.Fprintln(w, `usage:
   vbas complete --buffer <line> [--cursor N] [--specs DIR] [--json] [--interactive]
   vbas daemon   [--socket PATH] [--specs DIR]
+  vbas setup
   vbas version`)
 }
 

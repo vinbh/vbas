@@ -1,0 +1,10 @@
+{
+  "_license": "MIT",
+  "_source": "https://github.com/withfig/autocomplete/blob/master/src/nano.ts",
+  "_generated": "tools/import-fig/import.ts",
+  "name": "nano",
+  "description": "Nano's ANOther editor, an enhanced free Pico clone",
+  "args": {
+    "template": "filepaths"
+  }
+}

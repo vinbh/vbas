@@ -6,7 +6,7 @@
 
 [![Go](https://img.shields.io/badge/go-1.21+-00ADD8?style=flat-square&logo=go&logoColor=white)](https://go.dev/)
 [![Platform](https://img.shields.io/badge/platform-linux%20%7C%20macOS-lightgrey?style=flat-square)](https://github.com/vinbh/vbas/releases)
-[![Commands](https://img.shields.io/badge/commands-63-58A6FF?style=flat-square)](./specs)
+[![Commands](https://img.shields.io/badge/commands-121-58A6FF?style=flat-square)](./specs)
 [![License](https://img.shields.io/badge/license-PolyForm--NC-D2A8FF?style=flat-square)](./LICENSE)
 [![Release](https://img.shields.io/github/v/release/vinbh/vbas?style=flat-square&color=3FB950)](https://github.com/vinbh/vbas/releases)
 
@@ -64,7 +64,16 @@ curl -fsSL https://raw.githubusercontent.com/vinbh/vbas/main/get.sh | bash
 
 Detects your OS and architecture, downloads the right binary from [Releases](https://github.com/vinbh/vbas/releases/latest), and installs everything. No Go required.
 
-### From source (requires Go 1.21+)
+### Via `go install` (requires Go 1.21+)
+
+```bash
+go install github.com/vinbh/vbas/cmd/vbas@latest
+vbas setup
+```
+
+`vbas setup` extracts the embedded specs and hooks to `~/.config/vbas/` and offers to wire your shell rc files automatically.
+
+### From source
 
 ```bash
 git clone https://github.com/vinbh/vbas.git
@@ -94,17 +103,24 @@ Open a new shell and start typing. `./uninstall.sh` removes everything (hand-rol
 
 | Category | Commands |
 |---|---|
-| Dev tools | `git`, `docker`, `kubectl`, `helm`, `terraform`, `make`, `gh`, `podman` |
-| Languages | `go`, `cargo`, `rustc`, `python`, `pip`, `node`, `npm`, `yarn`, `pnpm` |
-| Cloud | `aws`, `gcloud` |
-| Shell | `ls`, `find`, `grep`, `sed`, `xargs`, `tar`, `cat`, `less`, `head`, `tail`, `man`, `mv`, `cp`, `rm`, `chmod`, `chown`, `cd` |
-| Network | `curl`, `wget`, `ssh`, `scp`, `rsync`, `ping`, `nc`, `ssh-keygen` |
-| System | `systemctl`, `apt`, `brew`, `ps`, `kill`, `top`, `htop`, `df`, `du` |
-| Databases | `psql`, `mysql`, `sqlite3` |
-| Data | `jq` |
-| Editors / muxers | `vim`, `vi`, `nvim`, `tmux`, `screen` |
+| Dev tools | `git`, `docker`, `docker-compose`, `kubectl`, `helm`, `terraform`, `make`, `gh`, `podman` |
+| Kubernetes | `kind`, `minikube`, `k3d`, `kubectx`, `kubens` |
+| IaC / infra | `pulumi`, `ansible`, `ansible-playbook`, `vault` |
+| Cloud | `aws`, `gcloud`, `doctl`, `fly`, `vercel`, `netlify` |
+| Languages | `go`, `cargo`, `rustc`, `python`, `pip`, `node`, `npm`, `yarn`, `pnpm`, `ruby`, `gem`, `bundle`, `swift`, `dotnet`, `java` |
+| Version managers | `nvm`, `rbenv`, `pyenv`, `asdf` |
+| Python packaging | `poetry`, `pipenv`, `conda` |
+| Build tools | `cmake`, `gradle`, `mvn`, `ant`, `bazel` |
+| Shell utils | `ls`, `find`, `grep`, `sed`, `xargs`, `tar`, `cut`, `sort`, `uniq`, `wc`, `tee`, `diff`, `mv`, `cp`, `rm`, `ln`, `mkdir`, `touch`, `chmod`, `chown`, `cd` |
+| Viewing | `cat`, `less`, `head`, `tail`, `man`, `bat` |
+| Network | `curl`, `wget`, `ssh`, `scp`, `rsync`, `ping`, `nc`, `ssh-keygen`, `nmap`, `dig`, `traceroute` |
+| System | `systemctl`, `apt`, `brew`, `ps`, `kill`, `top`, `htop`, `df`, `du`, `lsof`, `uname`, `crontab` |
+| Databases | `psql`, `mysql`, `sqlite3`, `mongosh` |
+| Data | `jq`, `svn` |
+| Editors / muxers | `vim`, `vi`, `nvim`, `emacs`, `nano`, `tmux`, `screen` |
+| Dev workflow | `direnv`, `pre-commit`, `goreleaser`, `act`, `gpg` |
 
-63 commands imported from [Fig autocomplete](https://github.com/withfig/autocomplete) (MIT). To add more: edit [`tools/import-fig/commands.txt`](./tools/import-fig/commands.txt) and re-run the importer.
+121 commands imported from [Fig autocomplete](https://github.com/withfig/autocomplete) (MIT). To add more: edit [`tools/import-fig/commands.txt`](./tools/import-fig/commands.txt) and re-run the importer.
 
 ---
 
@@ -128,10 +144,9 @@ Open a new shell and start typing. `./uninstall.sh` removes everything (hand-rol
 
 | | Lands in |
 |---|---|
-| More of Fig's ~3000-CLI catalog | M7 |
-| fish shell | post-M7 |
-| LLM fallback for unknown commands | post-M7 |
-| Packages (deb/rpm/AUR/Homebrew) | M7+ |
+| fish shell | M9+ |
+| LLM fallback for unknown commands | M9+ |
+| Packages (deb/rpm/AUR/Homebrew) | M9+ |
 
 ---
 
@@ -165,6 +180,13 @@ source ./shell/zsh/vbas.zsh   # or: source ./shell/bash/vbas.bash
 # After rebuilding: pkill -KILL -f 'vbas daemon'
 ```
 
+To test the `go install` path locally:
+
+```bash
+go build -o ./bin/vbas ./cmd/vbas
+./bin/vbas setup
+```
+
 ```bash
 go test ./...
 ```
@@ -190,7 +212,8 @@ vhs demo/files.tape
 - [x] **M5.5** - file / folder generators (`cd`, `vim`, `ls`, `cp`, ...)
 - [x] **M6** - live completions via script generators (git branches, kubectl resources, docker containers, aws profiles)
 - [x] **M7** - bash shell support (4.3+), unified multi-shell installer
-- [ ] **M8+** - fish shell, history ranking, LLM fallback, packaging
+- [x] **M8** - 121-command catalog (2x), `go install` + embedded specs, `vbas setup`
+- [ ] **M9+** - fish shell, history ranking, LLM fallback, packaging
 
 ---
 
