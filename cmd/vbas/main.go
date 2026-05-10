@@ -178,6 +178,11 @@ func outputPlain(suggestions []spec.Suggestion, asJSON bool) {
 	}
 }
 
+func isDirExist(p string) bool {
+	fi, err := os.Stat(p)
+	return err == nil && fi.IsDir()
+}
+
 func defaultSpecsDir() string {
 	if d := os.Getenv("VBAS_SPECS_DIR"); d != "" {
 		return d
@@ -189,9 +194,14 @@ func defaultSpecsDir() string {
 		}
 	}
 	if exe, err := os.Executable(); err == nil {
-		p := filepath.Join(filepath.Dir(exe), "..", "specs")
-		if fi, err := os.Stat(p); err == nil && fi.IsDir() {
-			return p
+		exeDir := filepath.Dir(exe)
+		// Development / release-tarball layout: binary sits next to specs/
+		if p := filepath.Join(exeDir, "..", "specs"); isDirExist(p) {
+			return filepath.Clean(p)
+		}
+		// Homebrew layout: /opt/homebrew/bin/vbas → /opt/homebrew/share/vbas/specs
+		if p := filepath.Join(exeDir, "..", "share", "vbas", "specs"); isDirExist(p) {
+			return filepath.Clean(p)
 		}
 	}
 	return "specs"

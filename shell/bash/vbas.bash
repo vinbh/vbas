@@ -30,12 +30,34 @@ if (( BASH_VERSINFO[0] < 4 || ( BASH_VERSINFO[0] == 4 && BASH_VERSINFO[1] < 3 ) 
 fi
 
 # ----------------------------------------------------------------------------
+# Specs dir auto-detection
+# ----------------------------------------------------------------------------
+
+# Resolve VBAS_SPECS_DIR from this file's own location when it isn't set.
+# Supports two layouts without the user having to export anything:
+#
+#   Standard (~/.config/vbas/):
+#     vbas.bash sits alongside specs/ → specs_dir = thisdir/specs
+#
+#   Homebrew (…/share/vbas/):
+#     vbas.bash is at …/share/vbas/shell/bash/vbas.bash
+#     specs are at   …/share/vbas/specs/
+#     → specs_dir = thisdir/../../specs (two levels up)
+if [[ -z "${VBAS_SPECS_DIR:-}" ]]; then
+  _vbas_thisdir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+  if   [[ -d "$_vbas_thisdir/specs" ]];      then VBAS_SPECS_DIR="$_vbas_thisdir/specs"
+  elif [[ -d "$_vbas_thisdir/../../specs" ]]; then VBAS_SPECS_DIR="$(cd "$_vbas_thisdir/../../specs" && pwd -P)"
+  fi
+  unset _vbas_thisdir
+fi
+
+# ----------------------------------------------------------------------------
 # Helpers
 # ----------------------------------------------------------------------------
 
 # Mirrors the Go loader's lookup order: hand-rolled <specs>/<cmd>.json wins
 # over imported <specs>/fig/<cmd>.json. Falls back to ~/.config/vbas/specs
-# when VBAS_SPECS_DIR is unset, matching defaultSpecsDir() in the binary.
+# when VBAS_SPECS_DIR is unset.
 _vbas_has_spec() {
   local specs_dir="${VBAS_SPECS_DIR:-$HOME/.config/vbas/specs}"
   [[ -f "$specs_dir/$1.json" || -f "$specs_dir/fig/$1.json" ]]

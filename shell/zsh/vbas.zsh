@@ -24,14 +24,36 @@ if (( ! ${+commands[$VBAS_BIN]} )) && [[ ! -x "$VBAS_BIN" ]]; then
 fi
 
 # ----------------------------------------------------------------------------
+# Specs dir auto-detection
+# ----------------------------------------------------------------------------
+
+# Resolve VBAS_SPECS_DIR from this file's own location when it isn't set.
+# Supports two layouts without the user having to export anything:
+#
+#   Standard (~/.config/vbas/):
+#     vbas.zsh sits alongside specs/ → specs_dir = thisdir/specs
+#
+#   Homebrew (…/share/vbas/):
+#     vbas.zsh is at …/share/vbas/shell/zsh/vbas.zsh
+#     specs are at  …/share/vbas/specs/
+#     → specs_dir = thisdir/../../specs (two levels up)
+if [[ -z "${VBAS_SPECS_DIR:-}" ]]; then
+  _vbas_thisdir="${${(%):-%x}:A:h}"
+  if   [[ -d "$_vbas_thisdir/specs" ]];      then VBAS_SPECS_DIR="$_vbas_thisdir/specs"
+  elif [[ -d "$_vbas_thisdir/../../specs" ]]; then VBAS_SPECS_DIR="${_vbas_thisdir}/../../specs"
+    VBAS_SPECS_DIR="$(cd "$VBAS_SPECS_DIR" && pwd -P)"
+  fi
+  unset _vbas_thisdir
+fi
+
+# ----------------------------------------------------------------------------
 # Helpers
 # ----------------------------------------------------------------------------
 
 # Cheap stat per call — fine on every keystroke.
 # Mirrors the Go loader's lookup order: hand-rolled $VBAS_SPECS_DIR/<cmd>.json
 # wins, then fall back to imported $VBAS_SPECS_DIR/fig/<cmd>.json (M5+).
-# Falls back to ~/.config/vbas/specs when VBAS_SPECS_DIR is not set, matching
-# the Go binary's defaultSpecsDir() logic so install-mode users get auto-trigger.
+# Falls back to ~/.config/vbas/specs when VBAS_SPECS_DIR is not set.
 _vbas_has_spec() {
   local specs_dir="${VBAS_SPECS_DIR:-$HOME/.config/vbas/specs}"
   [[ -f "$specs_dir/$1.json" || -f "$specs_dir/fig/$1.json" ]]

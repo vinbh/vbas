@@ -35,6 +35,35 @@ archives:
 checksum:
   name_template: "checksums.txt"
 
+brews:
+  - name: vbas
+    repository:
+      owner: vinbh
+      name: homebrew-vbas
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+    directory: Formula
+    homepage: "https://github.com/vinbh/vbas"
+    description: "Amazon Q-style dropdown autocomplete for Linux and macOS. Works in zsh and bash."
+    license: "PolyForm-Noncommercial-1.0.0"
+    skip_upload: auto
+    install: |
+      bin.install "vbas"
+      pkgshare.install "specs"
+      pkgshare.install "shell"
+    caveats: |
+      To enable vbas, add one line to your shell rc file:
+
+        zsh  — add to ~/.zshrc:
+          source #{opt_pkgshare}/shell/zsh/vbas.zsh
+
+        bash — add to ~/.bashrc:
+          source #{opt_pkgshare}/shell/bash/vbas.bash
+
+      Then open a new terminal (or run: source ~/.zshrc).
+      No further setup needed — specs are installed automatically.
+    test: |
+      system "#{bin}/vbas", "version"
+
 release:
   github:
     owner: vinbh
