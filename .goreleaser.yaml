@@ -35,6 +35,31 @@ archives:
 checksum:
   name_template: "checksums.txt"
 
+nfpms:
+  - package_name: vbas
+    vendor: Vinayak Bhatt
+    homepage: https://github.com/vinbh/vbas
+    maintainer: Vinayak Bhatt <vinayak.farcry@gmail.com>
+    description: |-
+      Amazon Q-style dropdown autocomplete for Linux terminals.
+      Works in zsh and bash with Tab and Space triggers.
+    license: PolyForm-Noncommercial-1.0.0
+    formats:
+      - deb
+      - rpm
+      - apk
+      - archlinux
+    contents:
+      - src: specs/
+        dst: /usr/share/vbas/specs/
+        type: tree
+      - src: shell/zsh/vbas.zsh
+        dst: /usr/share/vbas/shell/zsh/vbas.zsh
+      - src: shell/bash/vbas.bash
+        dst: /usr/share/vbas/shell/bash/vbas.bash
+    scripts:
+      postinstall: scripts/pkg-postinstall.sh
+
 brews:
   - name: vbas
     repository:

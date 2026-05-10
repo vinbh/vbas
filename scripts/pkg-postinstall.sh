@@ -1,0 +1,11 @@
+#!/bin/sh
+echo ""
+echo "vbas installed. To enable in your shell, add one line to your rc file:"
+echo ""
+echo "  zsh  — add to ~/.zshrc:"
+echo "    source /usr/share/vbas/shell/zsh/vbas.zsh"
+echo ""
+echo "  bash — add to ~/.bashrc:"
+echo "    source /usr/share/vbas/shell/bash/vbas.bash"
+echo ""
+echo "Then open a new terminal (or source the file)."
