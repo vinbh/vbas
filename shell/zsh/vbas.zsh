@@ -133,7 +133,17 @@ _vbas_cascade() {
 _vbas_reset_state() {
   _VBAS_CASCADED_PREFIX=""
 }
-zle -N zle-line-init _vbas_reset_state
+zle -N _vbas_reset_state
+# Chain into zle-line-init rather than replacing it — add-zle-hook-widget
+# appends to the hook list so prompt themes (p10k, starship, etc.) keep
+# their own zle-line-init hooks intact.
+autoload -Uz add-zle-hook-widget 2>/dev/null
+if (( ${+functions[add-zle-hook-widget]} )); then
+  add-zle-hook-widget zle-line-init _vbas_reset_state
+else
+  # Pre-zsh-5.3 fallback: replace (may conflict with theme's zle-line-init).
+  zle -N zle-line-init _vbas_reset_state
+fi
 
 # ----------------------------------------------------------------------------
 # Tab — explicit dropdown trigger (always fires)
@@ -178,3 +188,16 @@ bindkey ' ' _vbas_smart_space
 # It fired too eagerly when a command name was a prefix of another (e.g.
 # "vi" triggered while the user was still typing "vim"). Space is the
 # unambiguous trigger; Tab still works as an explicit fallback.
+
+# ----------------------------------------------------------------------------
+# Pre-warm daemon so the first completion is instant
+# ----------------------------------------------------------------------------
+
+_vbas_ensure_daemon() {
+  local args=(daemon)
+  [[ -n "${VBAS_SPECS_DIR:-}"  ]] && args+=(--specs  "$VBAS_SPECS_DIR")
+  [[ -n "${VBAS_SOCKET:-}"     ]] && args+=(--socket "$VBAS_SOCKET")
+  "$VBAS_BIN" "${args[@]}" &>/dev/null
+}
+# Run in background; exits silently if a daemon is already listening.
+_vbas_ensure_daemon &!

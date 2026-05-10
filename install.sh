@@ -66,9 +66,25 @@ Add this to your ~/.zshrc:
 EOF
 fi
 
-cat <<EOF
-To enable in zsh, add this line to your ~/.zshrc (one time):
-    source $CONFIG_DIR/vbas.zsh
+ZSHRC="$HOME/.zshrc"
+SOURCE_LINE="source $CONFIG_DIR/vbas.zsh"
 
-Then open a new shell, or run:  source ~/.zshrc
-EOF
+if grep -qF "$SOURCE_LINE" "$ZSHRC" 2>/dev/null; then
+  echo "(vbas already sourced in ~/.zshrc)"
+elif [[ -t 0 ]] || [[ -t 1 ]]; then
+  # Interactive terminal — ask.
+  printf 'Add source line to ~/.zshrc? [Y/n] '
+  read -r yn < /dev/tty
+  case "${yn:-Y}" in
+    [Yy]*|"")
+      printf '\n# vbas autosuggest\n%s\n' "$SOURCE_LINE" >> "$ZSHRC"
+      echo "Added. Run: source ~/.zshrc" ;;
+    *)
+      echo "Skipped. Add manually:"
+      echo "    $SOURCE_LINE" ;;
+  esac
+else
+  # Non-interactive (piped curl install) — print the line, don't modify.
+  echo "To enable in zsh, add this line to your ~/.zshrc (one time):"
+  echo "    $SOURCE_LINE"
+fi
