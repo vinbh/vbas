@@ -2,7 +2,7 @@
 
 # vbas
 
-**Amazon Q-style dropdown autocomplete for Linux. Free, source-available, no Node required.**
+**Amazon Q-style dropdown autocomplete for Linux. Works in zsh and bash. Free, source-available, no Node required.**
 
 [![Go](https://img.shields.io/badge/go-1.21+-00ADD8?style=flat-square&logo=go&logoColor=white)](https://go.dev/)
 [![Platform](https://img.shields.io/badge/platform-linux%20%7C%20macOS-lightgrey?style=flat-square)](https://github.com/vinbh/vbas/releases)
@@ -26,7 +26,7 @@
 
 [Amazon Q CLI](https://aws.amazon.com/q/developer/cli/) ships the best terminal autocomplete available - an inline dropdown with descriptions, cascading through subcommand levels. It is **macOS-only**.
 
-On Linux you get `zsh-autosuggestions` (single-line ghost text) or zsh's built-in TAB completion (functional but not visual). **vbas** fills the gap: the same dropdown experience, as a single static Go binary. No Node, no Electron, no runtime deps. Sub-millisecond latency via a persistent background daemon.
+On Linux you get `zsh-autosuggestions` (single-line ghost text) or your shell's built-in TAB completion (functional but not visual). **vbas** fills the gap: the same dropdown experience, in zsh and bash, as a single static Go binary. No Node, no Electron, no runtime deps. Sub-millisecond latency via a persistent background daemon.
 
 ---
 
@@ -72,12 +72,18 @@ cd vbas
 ./install.sh
 ```
 
-### Enable in zsh
+### Enable in your shell
 
-Add one line to your `~/.zshrc`:
+The installer prompts you automatically. To add manually:
 
+**zsh** — add to `~/.zshrc`:
 ```bash
 source ~/.config/vbas/vbas.zsh
+```
+
+**bash** (4.3+) — add to `~/.bashrc`:
+```bash
+source ~/.config/vbas/vbas.bash
 ```
 
 Open a new shell and start typing. `./uninstall.sh` removes everything (hand-rolled specs are preserved).
@@ -123,7 +129,7 @@ Open a new shell and start typing. `./uninstall.sh` removes everything (hand-rol
 | | Lands in |
 |---|---|
 | More of Fig's ~3000-CLI catalog | M7 |
-| bash and fish shells | M7 |
+| fish shell | post-M7 |
 | LLM fallback for unknown commands | post-M7 |
 | Packages (deb/rpm/AUR/Homebrew) | M7+ |
 
@@ -132,7 +138,7 @@ Open a new shell and start typing. `./uninstall.sh` removes everything (hand-rol
 ## How it works
 
 ```
-zsh widget (space or Tab)
+zsh / bash widget (space or Tab)
       |
       v
   vbas client --unix socket--> vbas-daemon
@@ -142,7 +148,7 @@ zsh widget (space or Tab)
       |                              +- prefix-match remaining input
       <---- []Suggestion JSON -------+
       v
-  /dev/tty raw mode -> ANSI dropdown -> pick returned to zsh
+  /dev/tty raw mode -> ANSI dropdown -> pick returned to shell
 ```
 
 The daemon lazy-spawns on first use (fork + Setsid, no systemd required). If it can't start, vbas answers in-process so you're never left without completions. Generator scripts run with a 5-second timeout in your shell's cwd.
@@ -155,7 +161,7 @@ The daemon lazy-spawns on first use (fork + Setsid, no systemd required). If it 
 go build -o ./bin/vbas ./cmd/vbas
 export PATH="$PWD/bin:$PATH"
 export VBAS_SPECS_DIR="$PWD/specs"
-source ./shell/zsh/vbas.zsh
+source ./shell/zsh/vbas.zsh   # or: source ./shell/bash/vbas.bash
 # After rebuilding: pkill -KILL -f 'vbas daemon'
 ```
 
@@ -183,7 +189,8 @@ vhs demo/files.tape
 - [x] **M5** - 63 commands imported from [Fig autocomplete](https://github.com/withfig/autocomplete)
 - [x] **M5.5** - file / folder generators (`cd`, `vim`, `ls`, `cp`, ...)
 - [x] **M6** - live completions via script generators (git branches, kubectl resources, docker containers, aws profiles)
-- [ ] **M7+** - bash/fish, history ranking, LLM fallback, packaging
+- [x] **M7** - bash shell support (4.3+), unified multi-shell installer
+- [ ] **M8+** - fish shell, history ranking, LLM fallback, packaging
 
 ---
 
