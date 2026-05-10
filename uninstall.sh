@@ -13,6 +13,7 @@ CONFIG_DIR="$HOME/.config/vbas"
 pkill -KILL -f 'vbas daemon' 2>/dev/null || true
 rm -f "$BIN_DIR/vbas"
 rm -f "$CONFIG_DIR/vbas.zsh"
+rm -f "$CONFIG_DIR/vbas.bash"
 rm -rf "$CONFIG_DIR/specs/fig"
 
 # Tidy up empty parent dirs so an uninstall+reinstall is clean.
@@ -24,5 +25,6 @@ if [[ -d "$CONFIG_DIR" ]]; then
   echo "(kept $CONFIG_DIR — it still contains hand-rolled specs)"
 fi
 echo
-echo "Remove this line from your ~/.zshrc:"
-echo "    source $CONFIG_DIR/vbas.zsh"
+echo "Remove from your shell rc files:"
+echo "    source $CONFIG_DIR/vbas.zsh   # ~/.zshrc"
+echo "    source $CONFIG_DIR/vbas.bash  # ~/.bashrc"

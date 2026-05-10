@@ -28,6 +28,7 @@ archives:
     files:
       - specs/**
       - shell/zsh/vbas.zsh
+      - shell/bash/vbas.bash
       - install.sh
       - uninstall.sh
 
