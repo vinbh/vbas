@@ -1,9 +1,9 @@
 {
-  "name": "vbas-fig-importer",
+  "name": "peek-fig-importer",
   "private": true,
   "version": "0.0.1",
   "type": "module",
-  "description": "Imports curated specs from withfig/autocomplete into vbas's specs/fig/ directory.",
+  "description": "Imports curated specs from withfig/autocomplete into peek's specs/fig/ directory.",
   "scripts": {
     "import": "tsx import.ts"
   },

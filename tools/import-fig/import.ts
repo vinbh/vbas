@@ -8,7 +8,7 @@
  *   4. Prepend MIT-license metadata keys and write specs/fig/<cmd>.json
  *
  * Dynamic generators (functions inside Fig specs) are dropped during step 3.
- * vbas doesn't execute JS yet — that's M6 (goja). Static name/description
+ * peek doesn't execute JS yet — that's M6 (goja). Static name/description
  * /subcommand/option fields cover ~90% of practical completions.
  *
  * Run with:
@@ -29,7 +29,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const FIG_REPO = 'https://github.com/withfig/autocomplete.git';
-const FIG_CLONE = '/tmp/vbas-fig-autocomplete';
+const FIG_CLONE = '/tmp/peek-fig-autocomplete';
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(SCRIPT_DIR, '..', '..');
@@ -128,7 +128,7 @@ function findSpecPath(cmd: string): string | null {
 }
 
 // Add MIT-provenance keys at the top of the JSON. Go's decoder ignores
-// unknown fields, so these don't break vbas's parser. Keeping them in-file
+// unknown fields, so these don't break peek's parser. Keeping them in-file
 // (rather than a separate LICENSES/ doc) means the provenance never gets
 // separated from the data when someone copies a single spec around.
 function wrapWithMetadata(cmd: string, json: string): string {

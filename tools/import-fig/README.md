@@ -2,18 +2,18 @@
 
 Imports curated CLI specs from [`withfig/autocomplete`](https://github.com/withfig/autocomplete) into [`specs/fig/`](../../specs/fig/) at the repo root.
 
-This is a **dev tool** — needed only when you want to regenerate or extend the imported spec catalog. End users never run it; vbas ships the resulting JSON files inside the Go binary's spec directory.
+This is a **dev tool** — needed only when you want to regenerate or extend the imported spec catalog. End users never run it; peek ships the resulting JSON files inside the Go binary's spec directory.
 
 ## Run
 
 ```bash
 cd tools/import-fig
 npm install               # one-time, installs tsx
-npm run import            # uses cached /tmp/vbas-fig-autocomplete clone if present
+npm run import            # uses cached /tmp/peek-fig-autocomplete clone if present
 npm run import -- --refresh   # `git pull` the fig clone before importing
 ```
 
-First run takes ~1 minute (shallow-clones Fig + installs their deps into `/tmp/vbas-fig-autocomplete`). Subsequent runs reuse the clone and complete in seconds.
+First run takes ~1 minute (shallow-clones Fig + installs their deps into `/tmp/peek-fig-autocomplete`). Subsequent runs reuse the clone and complete in seconds.
 
 ## Output
 
@@ -36,7 +36,7 @@ Fig specs are TypeScript and often contain runtime functions:
 - **`generators`** — dynamic completion via shell scripts (e.g., live `git branch` names). Function fields are dropped during JSON serialization; the static parts of the generator object remain.
 - **`postProcess` / `filterTerm` / etc.** — all function values are dropped.
 
-Static fields (`name`, `description`, `subcommands`, `options`, positional `args`) survive intact and cover the bulk of practical completion. **Dynamic completion lands in M6** when vbas embeds a JS engine (`goja`).
+Static fields (`name`, `description`, `subcommands`, `options`, positional `args`) survive intact and cover the bulk of practical completion. **Dynamic completion lands in M6** when peek embeds a JS engine (`goja`).
 
 ## Editing the curated list
 

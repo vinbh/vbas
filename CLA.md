@@ -1,6 +1,6 @@
 # Contributor License Agreement (Individual)
 
-Thank you for your interest in contributing to **vbas** ("the Project").
+Thank you for your interest in contributing to **peek** ("the Project").
 
 By submitting a Contribution to the Project (including but not limited to opening pull requests, submitting patches, or otherwise sending code, documentation, tests, or other content for inclusion), you ("Contributor") agree to the following terms with respect to your Contribution.
 
