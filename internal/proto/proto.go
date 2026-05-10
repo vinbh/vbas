@@ -1,5 +1,5 @@
-// Package proto defines the wire format between the vbas client and the
-// long-running vbas daemon. Communication is newline-delimited JSON over
+// Package proto defines the wire format between the peek client and the
+// long-running peek daemon. Communication is newline-delimited JSON over
 // a Unix domain socket: one Request per connection followed by one
 // Response, then the daemon closes.
 //
@@ -7,7 +7,7 @@
 // debug a stuck daemon with plain `nc -U`.
 package proto
 
-import "github.com/vinbh/vbas/internal/spec"
+import "github.com/vinbh/peek/internal/spec"
 
 // Request is what the client sends to the daemon.
 type Request struct {

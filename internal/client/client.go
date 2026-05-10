@@ -1,7 +1,7 @@
-// Package client lets the vbas CLI talk to a running vbas-daemon over
+// Package client lets the peek CLI talk to a running peek-daemon over
 // a Unix socket, with auto-spawn of a detached daemon if one isn't
 // running yet. Callers are expected to fall back to in-process matching
-// if the client returns an error — that fallback is what keeps vbas
+// if the client returns an error — that fallback is what keeps peek
 // working even when the daemon can't start (locked filesystem,
 // permission issue, whatever).
 package client
@@ -18,8 +18,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/vinbh/vbas/internal/proto"
-	"github.com/vinbh/vbas/internal/spec"
+	"github.com/vinbh/peek/internal/proto"
+	"github.com/vinbh/peek/internal/spec"
 )
 
 // connectTimeout is the deadline for the initial dial. Kept short so that
@@ -33,17 +33,17 @@ const responseTimeout = 6 * time.Second
 
 // DefaultSocketPath returns the canonical Unix socket path for this user.
 //
-// Order: $VBAS_SOCKET, $XDG_RUNTIME_DIR/vbas/vbas.sock, /tmp/vbas-$UID.sock.
+// Order: $PEEK_SOCKET, $XDG_RUNTIME_DIR/peek/peek.sock, /tmp/peek-$UID.sock.
 // $XDG_RUNTIME_DIR is the right place on systemd Linux (tmpfs, cleared
 // on logout); the /tmp fallback is for systems that don't set it.
 func DefaultSocketPath() string {
-	if p := os.Getenv("VBAS_SOCKET"); p != "" {
+	if p := os.Getenv("PEEK_SOCKET"); p != "" {
 		return p
 	}
 	if dir := os.Getenv("XDG_RUNTIME_DIR"); dir != "" {
-		return filepath.Join(dir, "vbas", "vbas.sock")
+		return filepath.Join(dir, "peek", "peek.sock")
 	}
-	return filepath.Join(os.TempDir(), "vbas-"+strconv.Itoa(os.Getuid())+".sock")
+	return filepath.Join(os.TempDir(), "peek-"+strconv.Itoa(os.Getuid())+".sock")
 }
 
 // TryDaemon makes a single attempt to fetch suggestions from the daemon.
@@ -77,14 +77,14 @@ func TryDaemon(buffer, cwd, sockPath string) ([]spec.Suggestion, error) {
 	return resp.Suggestions, nil
 }
 
-// SpawnDaemon fires off a detached `vbas daemon` subprocess. Returns
+// SpawnDaemon fires off a detached `peek daemon` subprocess. Returns
 // once the subprocess has been started — does NOT wait for it to bind
 // the socket. The caller should answer the current request via the
 // in-process fallback; the daemon will be ready for the next one.
 //
 // On Linux we use Setsid so the daemon survives the parent exiting.
 // stderr goes to a log file alongside the socket so `cat $XDG_RUNTIME_DIR/
-// vbas/vbas-daemon.log` is the debug entry point.
+// peek/peek-daemon.log` is the debug entry point.
 func SpawnDaemon(sockPath, specsDir string) error {
 	exe, err := os.Executable()
 	if err != nil {
@@ -93,7 +93,7 @@ func SpawnDaemon(sockPath, specsDir string) error {
 
 	logDir := filepath.Dir(sockPath)
 	_ = os.MkdirAll(logDir, 0700)
-	logPath := filepath.Join(logDir, "vbas-daemon.log")
+	logPath := filepath.Join(logDir, "peek-daemon.log")
 	logFile, _ := os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
 
 	args := []string{"daemon", "--socket", sockPath}

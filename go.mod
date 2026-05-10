@@ -1,4 +1,4 @@
-module github.com/vinbh/vbas
+module github.com/vinbh/peek
 
 go 1.25.0
 

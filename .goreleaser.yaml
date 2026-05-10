@@ -1,6 +1,6 @@
 version: 2
 
-project_name: vbas
+project_name: peek
 
 before:
   hooks:
@@ -8,8 +8,8 @@ before:
     - go test ./...
 
 builds:
-  - main: ./cmd/vbas
-    binary: vbas
+  - main: ./cmd/peek
+    binary: peek
     goos:
       - linux
       - darwin
@@ -23,12 +23,12 @@ builds:
 
 archives:
   - format: tar.gz
-    name_template: "vbas_{{ .Os }}_{{ .Arch }}"
+    name_template: "peek_{{ .Os }}_{{ .Arch }}"
     wrap_in_directory: true
     files:
       - specs/**
-      - shell/zsh/vbas.zsh
-      - shell/bash/vbas.bash
+      - shell/zsh/peek.zsh
+      - shell/bash/peek.bash
       - install.sh
       - uninstall.sh
 
@@ -36,12 +36,12 @@ checksum:
   name_template: "checksums.txt"
 
 nfpms:
-  - package_name: vbas
+  - package_name: peek
     vendor: Vinayak Bhatt
-    homepage: https://github.com/vinbh/vbas
+    homepage: https://github.com/vinbh/peek
     maintainer: Vinayak Bhatt <vinayak.farcry@gmail.com>
     description: |-
-      Amazon Q-style dropdown autocomplete for Linux terminals.
+      >_ peek: Amazon Q-style dropdown autocomplete for Linux terminals.
       Works in zsh and bash with Tab and Space triggers.
     license: PolyForm-Noncommercial-1.0.0
     formats:
@@ -51,48 +51,48 @@ nfpms:
       - archlinux
     contents:
       - src: specs/
-        dst: /usr/share/vbas/specs/
+        dst: /usr/share/peek/specs/
         type: tree
-      - src: shell/zsh/vbas.zsh
-        dst: /usr/share/vbas/shell/zsh/vbas.zsh
-      - src: shell/bash/vbas.bash
-        dst: /usr/share/vbas/shell/bash/vbas.bash
+      - src: shell/zsh/peek.zsh
+        dst: /usr/share/peek/shell/zsh/peek.zsh
+      - src: shell/bash/peek.bash
+        dst: /usr/share/peek/shell/bash/peek.bash
     scripts:
       postinstall: scripts/pkg-postinstall.sh
 
 brews:
-  - name: vbas
+  - name: peek
     repository:
       owner: vinbh
-      name: homebrew-vbas
+      name: homebrew-peek
       token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
     directory: Formula
-    homepage: "https://github.com/vinbh/vbas"
-    description: "Amazon Q-style dropdown autocomplete for Linux and macOS. Works in zsh and bash."
+    homepage: "https://github.com/vinbh/peek"
+    description: ">_ peek: Amazon Q-style dropdown autocomplete for Linux and macOS. Works in zsh and bash."
     license: "PolyForm-Noncommercial-1.0.0"
     skip_upload: auto
     install: |
-      bin.install "vbas"
+      bin.install "peek"
       pkgshare.install "specs"
       pkgshare.install "shell"
     caveats: |
-      To enable vbas, add one line to your shell rc file:
+      To enable peek, add one line to your shell rc file:
 
-        zsh  — add to ~/.zshrc:
-          source #{opt_pkgshare}/shell/zsh/vbas.zsh
+        zsh  - add to ~/.zshrc:
+          source #{opt_pkgshare}/shell/zsh/peek.zsh
 
-        bash — add to ~/.bashrc:
-          source #{opt_pkgshare}/shell/bash/vbas.bash
+        bash - add to ~/.bashrc:
+          source #{opt_pkgshare}/shell/bash/peek.bash
 
       Then open a new terminal (or run: source ~/.zshrc).
-      No further setup needed — specs are installed automatically.
+      No further setup needed - specs are installed automatically.
     test: |
-      system "#{bin}/vbas", "version"
+      system "#{bin}/peek", "version"
 
 release:
   github:
     owner: vinbh
-    name: vbas
+    name: peek
   draft: false
   prerelease: auto
 

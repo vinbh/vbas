@@ -1,10 +1,10 @@
-// vbas is the vb-autosuggest CLI (https://github.com/vinbh/vbas).
+// peek is the terminal autosuggest CLI (https://github.com/vinbh/peek).
 //
 // Usage:
 //
-//	vbas complete --buffer "<line>" [--cursor N] [--specs DIR] [--json] [--interactive]
-//	vbas daemon   [--socket PATH] [--specs DIR]
-//	vbas version
+//	peek complete --buffer "<line>" [--cursor N] [--specs DIR] [--json] [--interactive]
+//	peek daemon   [--socket PATH] [--specs DIR]
+//	peek version
 //
 // In --interactive mode the dropdown UI is drawn on /dev/tty and the
 // chosen value is written to stdout. Exit codes:
@@ -13,7 +13,7 @@
 //	1  — internal error
 //	2  — nothing to suggest (no spec, no matches); shell should fall through
 //
-// The complete subcommand transparently uses a long-running vbas daemon
+// The complete subcommand transparently uses a long-running peek daemon
 // over a Unix socket when one is available (sub-millisecond round-trip).
 // If no daemon is running, the request is answered in-process and a
 // detached daemon is spawned in the background for the next request.
@@ -28,10 +28,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/vinbh/vbas/internal/client"
-	"github.com/vinbh/vbas/internal/daemon"
-	"github.com/vinbh/vbas/internal/spec"
-	"github.com/vinbh/vbas/internal/ui"
+	"github.com/vinbh/peek/internal/client"
+	"github.com/vinbh/peek/internal/daemon"
+	"github.com/vinbh/peek/internal/spec"
+	"github.com/vinbh/peek/internal/ui"
 )
 
 const version = "0.3.0"
@@ -49,11 +49,11 @@ func main() {
 	case "setup":
 		runSetup()
 	case "version", "--version", "-v":
-		fmt.Printf("vbas %s\n", version)
+		fmt.Printf("peek %s\n", version)
 	case "help", "--help", "-h":
 		usage(os.Stdout)
 	default:
-		fmt.Fprintf(os.Stderr, "vbas: unknown subcommand %q\n", os.Args[1])
+		fmt.Fprintf(os.Stderr, "peek: unknown subcommand %q\n", os.Args[1])
 		usage(os.Stderr)
 		os.Exit(2)
 	}
@@ -61,10 +61,10 @@ func main() {
 
 func usage(w *os.File) {
 	fmt.Fprintln(w, `usage:
-  vbas complete --buffer <line> [--cursor N] [--specs DIR] [--json] [--interactive]
-  vbas daemon   [--socket PATH] [--specs DIR]
-  vbas setup
-  vbas version`)
+  peek complete --buffer <line> [--cursor N] [--specs DIR] [--json] [--interactive]
+  peek daemon   [--socket PATH] [--specs DIR]
+  peek setup
+  peek version`)
 }
 
 func runComplete(args []string) {
@@ -80,7 +80,7 @@ func runComplete(args []string) {
 
 	suggestions, err := getSuggestions(*buffer, *specsDir)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "vbas: %v\n", err)
+		fmt.Fprintf(os.Stderr, "peek: %v\n", err)
 		os.Exit(1)
 	}
 
@@ -99,14 +99,14 @@ func runDaemon(args []string) {
 		os.Exit(2)
 	}
 	if err := daemon.Run(context.Background(), *sockPath, *specsDir); err != nil {
-		fmt.Fprintf(os.Stderr, "vbas-daemon: %v\n", err)
+		fmt.Fprintf(os.Stderr, "peek-daemon: %v\n", err)
 		os.Exit(1)
 	}
 }
 
 // getSuggestions tries the daemon first; on failure, answers in-process
 // AND fires off a detached daemon spawn so the next request hits the
-// fast path. The fallback keeps vbas usable even when the daemon can't
+// fast path. The fallback keeps peek usable even when the daemon can't
 // start (locked filesystem, weird permissions, etc).
 func getSuggestions(buffer, specsDir string) ([]spec.Suggestion, error) {
 	if buffer == "" {
@@ -159,7 +159,7 @@ func outputInteractive(suggestions []spec.Suggestion) {
 	}
 	pick, err := ui.Run(items)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "vbas: %v\n", err)
+		fmt.Fprintf(os.Stderr, "peek: %v\n", err)
 		os.Exit(1)
 	}
 	if pick != "" {
@@ -184,11 +184,11 @@ func isDirExist(p string) bool {
 }
 
 func defaultSpecsDir() string {
-	if d := os.Getenv("VBAS_SPECS_DIR"); d != "" {
+	if d := os.Getenv("PEEK_SPECS_DIR"); d != "" {
 		return d
 	}
 	if home, err := os.UserHomeDir(); err == nil {
-		p := filepath.Join(home, ".config", "vbas", "specs")
+		p := filepath.Join(home, ".config", "peek", "specs")
 		if fi, err := os.Stat(p); err == nil && fi.IsDir() {
 			return p
 		}
@@ -199,8 +199,8 @@ func defaultSpecsDir() string {
 		if p := filepath.Join(exeDir, "..", "specs"); isDirExist(p) {
 			return filepath.Clean(p)
 		}
-		// Homebrew layout: /opt/homebrew/bin/vbas → /opt/homebrew/share/vbas/specs
-		if p := filepath.Join(exeDir, "..", "share", "vbas", "specs"); isDirExist(p) {
+		// Homebrew / deb / rpm layout: /usr/{bin,opt/homebrew/bin}/peek → ../share/peek/specs
+		if p := filepath.Join(exeDir, "..", "share", "peek", "specs"); isDirExist(p) {
 			return filepath.Clean(p)
 		}
 	}

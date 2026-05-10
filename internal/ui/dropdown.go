@@ -168,7 +168,7 @@ const (
 )
 
 // barChar is the left-edge gutter rendered cyan on every row — a visual
-// marker so the dropdown is unmistakably vbas, not zsh's default
+// marker so the dropdown is unmistakably peek, not zsh's default
 // menuselect or some other completion plugin.
 const barChar = "▍"
 
@@ -220,13 +220,13 @@ func (d *dropdown) draw() {
 		b.WriteString(csiReset)
 	}
 
-	// Footer: ─── vbas [· "query"] ─── hints · X/N
+	// Footer: ─── peek [· "query"] ─── hints · X/N
 	b.WriteString("\r\n")
 	b.WriteString(csiFaint)
 	b.WriteString("─── ")
 	b.WriteString(csiReset)
 	b.WriteString(csiBoldCyan)
-	b.WriteString("vbas")
+	b.WriteString(">_ peek")
 	b.WriteString(csiReset)
 
 	if d.query != "" {

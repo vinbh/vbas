@@ -9,28 +9,28 @@ import (
 	"path/filepath"
 	"strings"
 
-	vbasassets "github.com/vinbh/vbas"
+	peekassets "github.com/vinbh/peek"
 )
 
-// runSetup implements "vbas setup": extracts embedded specs and shell hooks
-// to ~/.config/vbas/ and offers to wire them into detected shell rc files.
+// runSetup implements "peek setup": extracts embedded specs and shell hooks
+// to ~/.config/peek/ and offers to wire them into detected shell rc files.
 // This is the go-install path — no separate download needed after:
 //
-//	go install github.com/vinbh/vbas/cmd/vbas@latest
-//	vbas setup
+//	go install github.com/vinbh/peek/cmd/peek@latest
+//	peek setup
 func runSetup() {
 	home, err := os.UserHomeDir()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "vbas setup: %v\n", err)
+		fmt.Fprintf(os.Stderr, "peek setup: %v\n", err)
 		os.Exit(1)
 	}
-	configDir := filepath.Join(home, ".config", "vbas")
+	configDir := filepath.Join(home, ".config", "peek")
 
 	// 1. Extract specs.
 	fmt.Println("==> extracting specs")
 	specsDir := filepath.Join(configDir, "specs")
-	if err := extractDir(vbasassets.EmbeddedSpecs, "specs", specsDir); err != nil {
-		fmt.Fprintf(os.Stderr, "vbas setup: extract specs: %v\n", err)
+	if err := extractDir(peekassets.EmbeddedSpecs, "specs", specsDir); err != nil {
+		fmt.Fprintf(os.Stderr, "peek setup: extract specs: %v\n", err)
 		os.Exit(1)
 	}
 	fmt.Printf("    %s\n", specsDir)
@@ -39,26 +39,26 @@ func runSetup() {
 	fmt.Println("==> extracting shell hooks")
 	type hook struct{ src, dst string }
 	hooks := []hook{
-		{"shell/zsh/vbas.zsh", filepath.Join(configDir, "vbas.zsh")},
-		{"shell/bash/vbas.bash", filepath.Join(configDir, "vbas.bash")},
+		{"shell/zsh/peek.zsh", filepath.Join(configDir, "peek.zsh")},
+		{"shell/bash/peek.bash", filepath.Join(configDir, "peek.bash")},
 	}
 	for _, h := range hooks {
-		if err := extractSingleFile(vbasassets.EmbeddedHooks, h.src, h.dst, 0644); err != nil {
-			fmt.Fprintf(os.Stderr, "vbas setup: extract %s: %v\n", h.src, err)
+		if err := extractSingleFile(peekassets.EmbeddedHooks, h.src, h.dst, 0644); err != nil {
+			fmt.Fprintf(os.Stderr, "peek setup: extract %s: %v\n", h.src, err)
 			os.Exit(1)
 		}
 		fmt.Printf("    %s\n", h.dst)
 	}
 
 	// 3. Stop any running daemon so the next completion uses the fresh specs.
-	_ = exec.Command("pkill", "-KILL", "-f", "vbas daemon").Run()
+	_ = exec.Command("pkill", "-KILL", "-f", "peek daemon").Run()
 
 	// 4. Detect shells and offer to wire rc files.
 	fmt.Println("==> shell integration")
 	type shell struct{ name, rcFile, hookFile string }
 	shells := []shell{
-		{"zsh", filepath.Join(home, ".zshrc"), filepath.Join(configDir, "vbas.zsh")},
-		{"bash", filepath.Join(home, ".bashrc"), filepath.Join(configDir, "vbas.bash")},
+		{"zsh", filepath.Join(home, ".zshrc"), filepath.Join(configDir, "peek.zsh")},
+		{"bash", filepath.Join(home, ".bashrc"), filepath.Join(configDir, "peek.bash")},
 	}
 	wiredAny := false
 	for _, s := range shells {
@@ -73,7 +73,7 @@ func runSetup() {
 	}
 
 	fmt.Println()
-	fmt.Println("Done. Open a new shell or re-source your rc file to activate vbas.")
+	fmt.Println("Done. Open a new shell or re-source your rc file to activate peek.")
 }
 
 // extractDir walks the embedded FS subtree at src and writes every file to
@@ -131,7 +131,7 @@ func offerRC(shell, rcFile, hookPath string) {
 	}
 	defer tty.Close()
 
-	fmt.Fprintf(tty, "  Enable vbas in %s (%s)? [Y/n] ", shell, filepath.Base(rcFile))
+	fmt.Fprintf(tty, "  Enable peek in %s (%s)? [Y/n] ", shell, filepath.Base(rcFile))
 	sc := bufio.NewScanner(tty)
 	sc.Scan()
 	ans := strings.TrimSpace(sc.Text())
@@ -143,7 +143,7 @@ func offerRC(shell, rcFile, hookPath string) {
 			return
 		}
 		defer f.Close()
-		fmt.Fprintf(f, "\n# vbas autosuggest\n%s\n", srcLine)
+		fmt.Fprintf(f, "\n# peek autosuggest\n%s\n", srcLine)
 		fmt.Printf("  Added. Run: source %s\n", rcFile)
 	} else {
 		fmt.Printf("  Skipped. Add manually to %s:\n      %s\n", rcFile, srcLine)

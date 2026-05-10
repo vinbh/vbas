@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/vinbh/vbas/internal/spec"
+	"github.com/vinbh/peek/internal/spec"
 )
 
 func TestRequestRoundTrip(t *testing.T) {

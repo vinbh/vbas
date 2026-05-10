@@ -9,14 +9,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/vinbh/vbas/internal/proto"
+	"github.com/vinbh/peek/internal/proto"
 )
 
 // Spin up a daemon in a temp dir with a tiny git spec, send it a complete
 // request over the socket, verify the suggestions come back.
 func TestEndToEnd(t *testing.T) {
 	tmp := t.TempDir()
-	sockPath := filepath.Join(tmp, "vbas.sock")
+	sockPath := filepath.Join(tmp, "peek.sock")
 	specsDir := filepath.Join(tmp, "specs")
 	if err := os.MkdirAll(specsDir, 0700); err != nil {
 		t.Fatal(err)
@@ -85,7 +85,7 @@ func TestEndToEnd(t *testing.T) {
 
 func TestStaleSocketReclaim(t *testing.T) {
 	tmp := t.TempDir()
-	sockPath := filepath.Join(tmp, "vbas.sock")
+	sockPath := filepath.Join(tmp, "peek.sock")
 	// Touch the socket file so it exists but isn't bound.
 	f, err := os.Create(sockPath)
 	if err != nil {

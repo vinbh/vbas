@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 #
-# vbas installer.
+# peek installer.
 #
 # Works in two modes:
-#   1. Pre-built release archive: a "vbas" binary sits next to this script
+#   1. Pre-built release archive: a "peek" binary sits next to this script
 #      (extracted from a GitHub release tarball). No Go required.
-#   2. Source install: builds from ./cmd/vbas. Requires Go 1.21+.
+#   2. Source install: builds from ./cmd/peek. Requires Go 1.21+.
 #
 # Detects installed shells (zsh, bash) and offers to wire each one.
 # Idempotent — running it again refreshes the install.
@@ -19,7 +19,7 @@ set -euo pipefail
 
 PREFIX="${PREFIX:-$HOME/.local}"
 BIN_DIR="$PREFIX/bin"
-CONFIG_DIR="$HOME/.config/vbas"
+CONFIG_DIR="$HOME/.config/peek"
 
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 cd "$ROOT"
@@ -28,17 +28,17 @@ cd "$ROOT"
 # 1. Build or locate binary
 # ----------------------------------------------------------------------------
 
-if [[ -f "./vbas" ]]; then
+if [[ -f "./peek" ]]; then
   echo "==> using pre-built binary"
   mkdir -p ./bin
-  cp ./vbas ./bin/vbas
-  chmod +x ./bin/vbas
+  cp ./peek ./bin/peek
+  chmod +x ./bin/peek
 elif command -v go &>/dev/null; then
   echo "==> building from source"
-  go build -o ./bin/vbas ./cmd/vbas
+  go build -o ./bin/peek ./cmd/peek
 else
   echo "error: no pre-built binary found and 'go' is not in PATH." >&2
-  echo "  Download a pre-built release from https://github.com/vinbh/vbas/releases" >&2
+  echo "  Download a pre-built release from https://github.com/vinbh/peek/releases" >&2
   echo "  or install Go from https://go.dev/dl/ and re-run this script." >&2
   exit 1
 fi
@@ -49,21 +49,21 @@ fi
 
 echo "==> installing"
 mkdir -p "$BIN_DIR" "$CONFIG_DIR/specs"
-install -m 0755 ./bin/vbas          "$BIN_DIR/vbas"
-install -m 0644 ./shell/zsh/vbas.zsh  "$CONFIG_DIR/vbas.zsh"
-install -m 0644 ./shell/bash/vbas.bash "$CONFIG_DIR/vbas.bash"
+install -m 0755 ./bin/peek          "$BIN_DIR/peek"
+install -m 0644 ./shell/zsh/peek.zsh  "$CONFIG_DIR/peek.zsh"
+install -m 0644 ./shell/bash/peek.bash "$CONFIG_DIR/peek.bash"
 cp -R ./specs/. "$CONFIG_DIR/specs/"
 chmod -R u+rw,go-w "$CONFIG_DIR/specs"
 
 # Stop any running daemon so the next completion picks up the fresh binary.
-pkill -KILL -f 'vbas daemon' 2>/dev/null || true
+pkill -KILL -f 'peek daemon' 2>/dev/null || true
 
 cat <<EOF
 
-vbas installed:
-  binary  →  $BIN_DIR/vbas
-  zsh     →  $CONFIG_DIR/vbas.zsh
-  bash    →  $CONFIG_DIR/vbas.bash
+peek installed:
+  binary  →  $BIN_DIR/peek
+  zsh     →  $CONFIG_DIR/peek.zsh
+  bash    →  $CONFIG_DIR/peek.bash
   specs   →  $CONFIG_DIR/specs/
 
 EOF
@@ -89,12 +89,12 @@ _offer_rc() {
     return
   fi
 
-  printf "  Enable vbas in %s (%s)? [Y/n] " "$label" "$(basename "$rc")"
+  printf "  Enable peek in %s (%s)? [Y/n] " "$label" "$(basename "$rc")"
   local yn
   read -r yn < /dev/tty
   case "${yn:-Y}" in
     [Yy]*|"")
-      printf '\n# vbas autosuggest\n%s\n' "$src" >> "$rc"
+      printf '\n# peek autosuggest\n%s\n' "$src" >> "$rc"
       echo "  Added. Run: source $rc" ;;
     *)
       echo "  Skipped. Add manually to $rc:"
@@ -118,17 +118,17 @@ HAS_BASH=0; command -v bash &>/dev/null && HAS_BASH=1
 
 if (( HAS_ZSH )); then
   if (( IS_INTERACTIVE )); then
-    _offer_rc "zsh" "$HOME/.zshrc" "$CONFIG_DIR/vbas.zsh"
+    _offer_rc "zsh" "$HOME/.zshrc" "$CONFIG_DIR/peek.zsh"
   else
-    _noninteractive_hint "zsh" "$HOME/.zshrc" "$CONFIG_DIR/vbas.zsh"
+    _noninteractive_hint "zsh" "$HOME/.zshrc" "$CONFIG_DIR/peek.zsh"
   fi
 fi
 
 if (( HAS_BASH )); then
   if (( IS_INTERACTIVE )); then
-    _offer_rc "bash" "$HOME/.bashrc" "$CONFIG_DIR/vbas.bash"
+    _offer_rc "bash" "$HOME/.bashrc" "$CONFIG_DIR/peek.bash"
   else
-    _noninteractive_hint "bash" "$HOME/.bashrc" "$CONFIG_DIR/vbas.bash"
+    _noninteractive_hint "bash" "$HOME/.bashrc" "$CONFIG_DIR/peek.bash"
   fi
 fi
 

@@ -15,7 +15,7 @@ const scriptTimeout = 5 * time.Second
 // execute a shell command and parse stdout; template generators delegate to
 // RunTemplates. Duplicate values (by Value field) are deduplicated.
 //
-// Specs in ~/.config/vbas/specs/ are user-controlled; imported Fig specs come
+// Specs in ~/.config/peek/specs/ are user-controlled; imported Fig specs come
 // from withfig/autocomplete (MIT). Scripts run with the user's shell cwd and
 // inherit no special privileges beyond the daemon process itself.
 func RunGenerators(gens Generators, cwd, token string) []Suggestion {

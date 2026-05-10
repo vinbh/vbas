@@ -1,4 +1,4 @@
-// Package daemon implements the vbas long-running matching server.
+// Package daemon implements the peek long-running matching server.
 //
 // On startup it binds a Unix domain socket (with stale-socket recovery)
 // and serves one Request → one Response per connection. Spec parsing
@@ -24,8 +24,8 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/vinbh/vbas/internal/proto"
-	"github.com/vinbh/vbas/internal/spec"
+	"github.com/vinbh/peek/internal/proto"
+	"github.com/vinbh/peek/internal/spec"
 )
 
 // Run binds the Unix socket at sockPath and serves until ctx is cancelled
@@ -57,7 +57,7 @@ func Run(ctx context.Context, sockPath, specsDir string) error {
 		select {
 		case <-ctx.Done():
 		case s := <-sigCh:
-			log.Printf("vbas-daemon: received %s, shutting down", s)
+			log.Printf("peek-daemon: received %s, shutting down", s)
 		}
 		_ = ln.Close()
 	}()
@@ -65,7 +65,7 @@ func Run(ctx context.Context, sockPath, specsDir string) error {
 	loader := spec.NewLoader(specsDir)
 	var wg sync.WaitGroup
 
-	log.Printf("vbas-daemon: listening on %s, specs=%s", sockPath, specsDir)
+	log.Printf("peek-daemon: listening on %s, specs=%s", sockPath, specsDir)
 	for {
 		conn, err := ln.Accept()
 		if err != nil {
@@ -73,7 +73,7 @@ func Run(ctx context.Context, sockPath, specsDir string) error {
 				wg.Wait()
 				return nil
 			}
-			log.Printf("vbas-daemon: accept: %v", err)
+			log.Printf("peek-daemon: accept: %v", err)
 			continue
 		}
 		wg.Add(1)
@@ -97,7 +97,7 @@ func reclaimStaleSocket(sockPath string) error {
 	conn, err := net.Dial("unix", sockPath)
 	if err == nil {
 		conn.Close()
-		return fmt.Errorf("another vbas-daemon is already running on %s", sockPath)
+		return fmt.Errorf("another peek-daemon is already running on %s", sockPath)
 	}
 	// Not alive — unlink.
 	return os.Remove(sockPath)

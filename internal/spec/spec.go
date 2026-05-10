@@ -1,4 +1,4 @@
-// Package spec defines the completion specification format used by vbas.
+// Package spec defines the completion specification format used by peek.
 //
 // The schema is intentionally a strict subset of Fig's autocomplete spec
 // (https://fig.io/docs/reference/spec) so transpiled Fig specs can drop in

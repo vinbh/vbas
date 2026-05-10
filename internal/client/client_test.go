@@ -8,32 +8,31 @@ import (
 )
 
 func TestDefaultSocketPath(t *testing.T) {
-	t.Run("VBAS_SOCKET wins", func(t *testing.T) {
-		t.Setenv("VBAS_SOCKET", "/custom/path.sock")
+	t.Run("PEEK_SOCKET wins", func(t *testing.T) {
+		t.Setenv("PEEK_SOCKET", "/custom/path.sock")
 		t.Setenv("XDG_RUNTIME_DIR", "/run/user/1000")
 		got := DefaultSocketPath()
 		if got != "/custom/path.sock" {
-			t.Errorf("want VBAS_SOCKET to win, got %q", got)
+			t.Errorf("want PEEK_SOCKET to win, got %q", got)
 		}
 	})
 
 	t.Run("XDG_RUNTIME_DIR is preferred over /tmp", func(t *testing.T) {
-		t.Setenv("VBAS_SOCKET", "")
+		t.Setenv("PEEK_SOCKET", "")
 		t.Setenv("XDG_RUNTIME_DIR", "/run/user/1000")
 		got := DefaultSocketPath()
-		want := filepath.Join("/run/user/1000", "vbas", "vbas.sock")
+		want := filepath.Join("/run/user/1000", "peek", "peek.sock")
 		if got != want {
 			t.Errorf("want %q, got %q", want, got)
 		}
 	})
 
-	t.Run("falls back to /tmp/vbas-UID.sock", func(t *testing.T) {
-		t.Setenv("VBAS_SOCKET", "")
+	t.Run("falls back to /tmp/peek-UID.sock", func(t *testing.T) {
+		t.Setenv("PEEK_SOCKET", "")
 		t.Setenv("XDG_RUNTIME_DIR", "")
 		got := DefaultSocketPath()
 		uid := os.Getuid()
-		// Just sanity-check shape; exact tmp dir varies.
-		if !strings.Contains(got, "vbas-") || !strings.Contains(got, ".sock") {
+		if !strings.Contains(got, "peek-") || !strings.Contains(got, ".sock") {
 			t.Errorf("unexpected fallback path: %q", got)
 		}
 		_ = uid
