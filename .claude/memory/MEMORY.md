@@ -1,0 +1,7 @@
+- [User language proficiency](user_languages.md) — strong Python, OK-ish Go; explain Go a bit more
+- [User git identity](user_git_identity.md) — Vinayak Bhatt <vinayakbhatt@mit.tc>; use per-command -c overrides, don't touch global config
+- [Commit message style — no Claude trailer](feedback_commit_style.md) — omit Co-Authored-By trailer
+- [User prefers polish per milestone](feedback_polish_per_milestone.md) — when wrapping a milestone, offer concrete polish before pitching the next one
+- [Wait for user check before pushing milestones](feedback_review_before_push.md) — milestone commits commit locally then ASK before push; polish commits can push immediately
+- [CLAUDE.md is local-only](feedback_claude_md_local.md) — gitignore it; never commit or push
+- [peek project overview](project_overview.md) — M0–M8 done, v0.3.0 released (2026-05-16), renamed vbas→peek, deb/rpm/apk added; M9 next (fish, LLM fallback, AUR)
